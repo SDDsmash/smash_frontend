@@ -5,7 +5,8 @@ import type {
   RegionDetailInfraItem,
   RegionDetailSupportItem,
   JobInfo,
-  DwellingSimpleInfo
+  DwellingSimpleInfo,
+  AiPickRecommendation
 } from 'types/search'
 
 export function classNames(...classes: unknown[]): string {
@@ -204,14 +205,21 @@ function toNullableNumber(value: unknown): number | null {
 }
 
 function toInfraStats(
-  list: Array<{ major: InfraStat['major']; num?: number | null }> | undefined
+  list:
+    | Array<{
+        major: InfraStat['major']
+        num?: number | null
+        score?: number | string | null
+      }>
+    | undefined
 ): InfraStat[] {
   if (!Array.isArray(list)) return []
   return list
     .filter((item) => item && item.major)
     .map((item) => ({
       major: item.major,
-      num: Number(item.num ?? 0)
+      num: Number(item.num ?? 0),
+      score: toNullableNumber(item.score ?? null)
     }))
 }
 
@@ -284,6 +292,20 @@ function mapRecommendationResponse(payload: unknown): RegionRecommendation {
         | Array<{ major: InfraStat['major']; num?: number | null }>
         | undefined
     )
+  }
+}
+
+function mapAiPick(payload: unknown): AiPickRecommendation | null {
+  const record = toRecord(payload)
+  if (!record) return null
+  const codeRaw = record.aiPickSigunguCode
+  const reasonRaw = record.aiPickReason
+  const code = typeof codeRaw === 'string' ? codeRaw.trim() : ''
+  const reason = typeof reasonRaw === 'string' ? reasonRaw.trim() : ''
+  if (!code) return null
+  return {
+    aiPickSigunguCode: code,
+    aiPickReason: reason
   }
 }
 
@@ -380,20 +402,30 @@ function mapDetailResponse(payload: unknown): RegionDetail {
 
 export async function fetchRecommendations(
   filters: RecommendationParams | SearchFilters
-): Promise<RegionRecommendation[]> {
+): Promise<{ items: RegionRecommendation[]; aiPick: AiPickRecommendation[] }> {
   const normalizedFilters = isLegacyFilters(filters)
     ? legacyToRecommendationParams(filters)
     : filters
 
-  const response = await apiGet<unknown[]>('/api/recommend', {
+  const response = await apiGet<unknown>('/api/recommend', {
     supportTag: normalizedFilters.supportTag,
     midJobCode: normalizedFilters.midJobCode,
     dwellingType: normalizedFilters.dwellingType,
     price: normalizedFilters.price,
-    infraImportance: normalizedFilters.infraImportance
+    infraImportance: normalizedFilters.infraImportance,
+    aiUse: 'true'
   })
 
-  return Array.isArray(response) ? response.map(mapRecommendationResponse) : []
+  const root = toRecord(response) ?? {}
+  const itemsRaw = Array.isArray(root.items) ? root.items : []
+  const aiPickRaw = Array.isArray(root.aiPick) ? root.aiPick : []
+
+  const items = itemsRaw.map(mapRecommendationResponse)
+  const aiPick = aiPickRaw
+    .map(mapAiPick)
+    .filter((entry): entry is AiPickRecommendation => entry !== null)
+
+  return { items, aiPick }
 }
 
 export async function fetchRegionDetail(params: {

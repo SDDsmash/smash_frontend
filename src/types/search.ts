@@ -3,6 +3,7 @@ export type InfraMajor = 'HEALTH' | 'FOOD' | 'CULTURE' | 'LIFE'
 export interface InfraStat {
   major: InfraMajor
   num: number
+  score?: number | null
 }
 
 export interface JobInfo {
@@ -26,12 +27,19 @@ export interface RegionRecommendation {
   sigunguCode: string
   sigunguName: string
   score?: number | null
+  isAiPick?: boolean
+  aiPickReason?: string | null
   totalJobInfo?: JobInfo | null
   fitJobInfo?: JobInfo | null
   totalSupportNum?: number | null
   fitSupportNum?: number | null
   dwellingSimpleInfo?: DwellingSimpleInfo | null
   infraMajors?: InfraStat[]
+}
+
+export interface AiPickRecommendation {
+  aiPickSigunguCode: string
+  aiPickReason: string
 }
 
 export interface RegionDetailInfraItem {

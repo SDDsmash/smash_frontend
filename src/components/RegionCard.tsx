@@ -55,6 +55,9 @@ export default function RegionCard({
   const monthlyValue = item.dwellingSimpleInfo?.monthMid ?? null
   const jeonseValue = item.dwellingSimpleInfo?.jeonseMid ?? null
 
+  const hasScore =
+    typeof item.score === 'number' && !item.isAiPick && item.score !== null
+
   return (
     <article
       className={`w-full rounded-xl border border-gray-200 bg-white p-5 shadow-sm transition duration-200 ${
@@ -65,7 +68,7 @@ export default function RegionCard({
         onCardClick?.(String(item.sigunguCode))
       }}
     >
-      <div className="flex items-start gap-2">
+      <div className="flex items-start gap-3">
         <div className="mr-auto">
           <h3 className="text-xl font-semibold text-gray-900">
             {item.sidoName}
@@ -74,35 +77,45 @@ export default function RegionCard({
             ) : null}
             <span className="text-gray-900">{item.sigunguName}</span>
           </h3>
-          <p className="mt-1 text-sm text-gray-500">
-            {item.sidoCode ?? ''}
-            {item.sidoCode ? ' / ' : ''}
-            {item.sigunguCode ?? ''}
-          </p>
         </div>
-        {canAdd && (
-          <button
-            type="button"
-            onClick={(event) => {
-              addBySigunguCode(
-                String(item.sigunguCode),
-                jobCodeForDetail ? { jobCode: jobCodeForDetail } : undefined
-              )
-              event.preventDefault()
-              event.stopPropagation()
-            }}
-            className="inline-flex rounded-md border border-brand-600 px-3 py-1.5 text-sm text-brand-700 hover:bg-brand-50"
-          >
-            비교에 추가
-          </button>
-        )}
-        {typeof item.score === 'number' && (
-          <div className="rounded-lg bg-brand-50 px-3 py-1.5 text-brand-700 ring-1 ring-inset ring-brand-600/20">
-            <span className="text-sm font-semibold">Score</span>{' '}
-            <span className="tabular-nums">{item.score}</span>
-          </div>
-        )}
+        <div className="flex flex-row items-end gap-2">
+          {item.isAiPick ? (
+            <div className="rounded-lg bg-gradient-to-r from-indigo-500 via-brand-500 to-sky-500 px-3 py-1.5 text-white">
+              <span className="text-sm font-semibold">AI Pick</span>
+            </div>
+          ) : hasScore ? (
+            <div className="rounded-lg bg-brand-50 px-3 py-1.5 text-brand-700 ring-1 ring-inset ring-brand-600/20">
+              <span className="text-sm font-semibold">Score</span>{' '}
+              <span className="tabular-nums">{item.score}</span>
+            </div>
+          ) : null}
+
+          {canAdd && (
+            <button
+              type="button"
+              onClick={(event) => {
+                addBySigunguCode(
+                  String(item.sigunguCode),
+                  jobCodeForDetail ? { jobCode: jobCodeForDetail } : undefined
+                )
+                event.preventDefault()
+                event.stopPropagation()
+              }}
+              className="inline-flex rounded-md border border-brand-600 px-3 py-1.5 text-sm text-brand-700 hover:bg-brand-50"
+            >
+              비교에 추가
+            </button>
+          )}
+        </div>
       </div>
+
+      {item.isAiPick &&
+        item.aiPickReason &&
+        item.aiPickReason.trim().length > 0 && (
+          <p className="mt-4 rounded-xl bg-gradient-to-r from-brand-50 via-white to-white px-4 py-3 text-sm text-gray-700 ring-1 ring-brand-100">
+            {item.aiPickReason}
+          </p>
+        )}
 
       <div className={`mt-4 grid grid-cols-2 gap-4 ${metricsColsClass}`}>
         {typeof displayJobValue === 'number' && (

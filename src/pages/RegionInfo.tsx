@@ -354,7 +354,7 @@ export default function RegionInfo() {
           />
           <div className="relative flex flex-col gap-4 md:flex-row md:items-start md:gap-6">
             <div className="flex items-center gap-4">
-              <span className="relative flex size-12 items-center justify-center rounded-full  bg-white/80 text-3xl text-brand-600 shadow-lg ring-1 ring-brand-200 ">
+              <span className="relative flex size-12 items-center justify-center rounded-full bg-white/80 text-3xl text-brand-600 shadow-lg ring-1 ring-brand-200">
                 <span
                   role="img"
                   aria-label="AI insights"

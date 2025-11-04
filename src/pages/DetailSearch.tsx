@@ -233,8 +233,46 @@ export default function DetailSearch() {
         midJobCode: selectedJobMid || undefined,
         supportTag: selectedSupportTag || undefined
       }
-      const data = await fetchRecommendations(filters)
-      setResults(data)
+      const { items, aiPick } = await fetchRecommendations(filters)
+
+      const aiOrder = aiPick
+        .map((entry) => entry.aiPickSigunguCode?.trim())
+        .filter((code): code is string => Boolean(code))
+      const aiReasonMap = new Map<string, string>()
+      aiPick.forEach((entry) => {
+        const code = entry.aiPickSigunguCode?.trim()
+        if (!code) return
+        aiReasonMap.set(code, entry.aiPickReason?.trim() ?? '')
+      })
+
+      const annotated = items.map((item) => {
+        const code = String(item.sigunguCode ?? '').trim()
+        const reason = aiReasonMap.get(code) ?? null
+        return {
+          ...item,
+          isAiPick: reason != null,
+          aiPickReason: reason
+        }
+      })
+
+      const aiPickSet = new Set<string>()
+      const aiPickItems: RegionRecommendation[] = []
+      aiOrder.forEach((code) => {
+        const match = annotated.find(
+          (item) => String(item.sigunguCode ?? '').trim() === code
+        )
+        if (match) {
+          aiPickSet.add(code)
+          aiPickItems.push(match)
+        }
+      })
+
+      const remainingItems = annotated.filter((item) => {
+        const code = String(item.sigunguCode ?? '').trim()
+        return !aiPickSet.has(code)
+      })
+
+      setResults([...aiPickItems, ...remainingItems])
     } catch (err) {
       if (err instanceof ApiError) {
         setError(err.message)
