@@ -21,6 +21,14 @@ export default function RegionInfo() {
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
+  const normalizeUrl = (raw?: string | null) => {
+    if (!raw) return ''
+    const trimmed = raw.trim()
+    if (!trimmed) return ''
+    if (/^https?:\/\//i.test(trimmed)) return trimmed
+    return `https://${trimmed}`
+  }
+
   useEffect(() => {
     if (!sigunguCode) {
       setError('시군구 코드가 필요합니다. (?sigunguCode=)')
@@ -120,9 +128,9 @@ export default function RegionInfo() {
                 </p>
               </div>
 
-              {data.jobURL && (
+              {normalizeUrl(data.jobURL) && (
                 <a
-                  href={data.jobURL}
+                  href={normalizeUrl(data.jobURL)}
                   target="_blank"
                   rel="noreferrer"
                   className="inline-flex items-center justify-center self-center rounded-md bg-brand-600 px-3 py-1.5 text-sm text-white shadow-sm hover:bg-brand-700"
@@ -253,7 +261,7 @@ export default function RegionInfo() {
                     </span>
                   )}
                   <a
-                    href={s.url}
+                    href={normalizeUrl(s.url)}
                     target="_blank"
                     rel="noreferrer"
                     className="mt-3 inline-flex w-fit rounded-md border border-brand-600 px-3 py-1.5 text-sm font-medium text-brand-700 hover:bg-brand-50"
