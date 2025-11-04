@@ -32,21 +32,6 @@ export interface RegionRecommendation {
   fitSupportNum?: number | null
   dwellingSimpleInfo?: DwellingSimpleInfo | null
   infraMajors?: InfraStat[]
-
-  /** @deprecated 기존 UI 호환성을 위한 플랫 필드 */
-  totalJobNum?: number
-  /** @deprecated 기존 UI 호환성을 위한 플랫 필드 */
-  fitJobNum?: number | null
-  /** @deprecated 기존 UI 호환성을 위한 플랫 필드 */
-  monthlyRentAvg?: number
-  /** @deprecated 기존 UI 호환성을 위한 플랫 필드 */
-  monthlyRentMid?: number
-  /** @deprecated 기존 UI 호환성을 위한 플랫 필드 */
-  jeonseAvg?: number
-  /** @deprecated 기존 UI 호환성을 위한 플랫 필드 */
-  jeonseMid?: number
-  /** @deprecated 기존 UI 호환성을 위한 플랫 필드 */
-  infra?: InfraStat[]
 }
 
 export interface RegionDetailInfraItem {

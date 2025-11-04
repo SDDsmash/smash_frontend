@@ -153,6 +153,13 @@ const legacySupportTagMap: Record<string, string> = {
   주거지원: 'HOUSING_SUPPORT'
 }
 
+const VALID_INFRA_MAJORS: InfraStat['major'][] = [
+  'HEALTH',
+  'FOOD',
+  'CULTURE',
+  'LIFE'
+]
+
 function legacyToRecommendationParams(
   filters: SearchFilters
 ): RecommendationParams {
@@ -176,6 +183,17 @@ function legacyToRecommendationParams(
   }
 }
 
+function toRecord(value: unknown): Record<string, unknown> | null {
+  if (!value || typeof value !== 'object') return null
+  return value as Record<string, unknown>
+}
+
+function toNullableNumber(value: unknown): number | null {
+  if (value === null || value === undefined) return null
+  const num = Number(value)
+  return Number.isFinite(num) ? num : null
+}
+
 function toInfraStats(
   list: Array<{ major: InfraStat['major']; num?: number | null }> | undefined
 ): InfraStat[] {
@@ -188,34 +206,39 @@ function toInfraStats(
     }))
 }
 
-function toJobInfo(data: any): JobInfo | null {
-  if (!data || typeof data !== 'object') return null
-  const countRaw = 'count' in data ? data.count : undefined
+function toJobInfo(data: unknown): JobInfo | null {
+  const record = toRecord(data)
+  if (!record) return null
+  const countRaw = record.count
   const count = typeof countRaw === 'number' ? countRaw : Number(countRaw ?? 0)
   return {
     count: Number.isFinite(count) ? count : 0,
-    url: typeof data.url === 'string' ? data.url : null
+    url: typeof record.url === 'string' ? record.url : null
   }
 }
 
-function toDwellingSimpleInfo(data: any): DwellingSimpleInfo | null {
-  if (!data || typeof data !== 'object') return null
-  const monthMid = data.monthMid ?? data.MonthMid ?? data.month_mid
-  const jeonseMid = data.jeonseMid ?? data.JeonseMid ?? data.jeonse_mid
+function toDwellingSimpleInfo(data: unknown): DwellingSimpleInfo | null {
+  const record = toRecord(data)
+  if (!record) return null
+  const monthMidRaw =
+    record.monthMid ?? record.MonthMid ?? record['month_mid'] ?? null
+  const jeonseMidRaw =
+    record.jeonseMid ?? record.JeonseMid ?? record['jeonse_mid'] ?? null
   return {
-    monthMid: monthMid == null ? null : Number(monthMid),
-    jeonseMid: jeonseMid == null ? null : Number(jeonseMid)
+    monthMid: toNullableNumber(monthMidRaw),
+    jeonseMid: toNullableNumber(jeonseMidRaw)
   }
 }
 
-function toSupportItems(list: any): RegionDetailSupportItem[] {
+function toSupportItems(list: unknown): RegionDetailSupportItem[] {
   const items: RegionDetailSupportItem[] = []
   if (!list) return items
 
-  const source = Array.isArray(list) ? list : list.supportDTOList
-  if (!Array.isArray(source)) return items
+  const rawSource = Array.isArray(list) ? list : toRecord(list)?.supportDTOList
+  const source = Array.isArray(rawSource) ? rawSource : []
 
-  for (const item of source) {
+  for (const raw of source) {
+    const item = toRecord(raw)
     if (!item) continue
     const title = (item.plcyNm as string) || (item.title as string) || ''
     const url = (item.aplyUrlAddr as string) || (item.url as string) || ''
@@ -226,83 +249,104 @@ function toSupportItems(list: any): RegionDetailSupportItem[] {
   return items
 }
 
-function mapRecommendationResponse(payload: any): RegionRecommendation {
-  const dwellingSimple = toDwellingSimpleInfo(payload?.dwellingSimpleInfo)
-  const totalJobInfo = toJobInfo(payload?.totalJobInfo)
-  const fitJobInfo = toJobInfo(payload?.fitJobInfo)
-
-  const monthlyMid = dwellingSimple?.monthMid ?? undefined
-  const jeonseMid = dwellingSimple?.jeonseMid ?? undefined
-  const monthlyAvgApprox = monthlyMid
-  const jeonseAvgApprox = jeonseMid
+function mapRecommendationResponse(payload: unknown): RegionRecommendation {
+  const source = toRecord(payload) ?? {}
+  const dwellingSimple = toDwellingSimpleInfo(source.dwellingSimpleInfo)
+  const totalJobInfo = toJobInfo(source.totalJobInfo)
+  const fitJobInfo = toJobInfo(source.fitJobInfo)
+  const totalSupportNum =
+    typeof source.totalSupportNum === 'number' ? source.totalSupportNum : null
+  const fitSupportNum =
+    typeof source.fitSupportNum === 'number' ? source.fitSupportNum : null
 
   return {
-    sidoCode: String(payload?.sidoCode ?? ''),
-    sidoName: String(payload?.sidoName ?? ''),
-    sigunguCode: String(payload?.sigunguCode ?? ''),
-    sigunguName: String(payload?.sigunguName ?? ''),
-    score: payload?.score ?? null,
+    sidoCode: String(source.sidoCode ?? ''),
+    sidoName: String(source.sidoName ?? ''),
+    sigunguCode: String(source.sigunguCode ?? ''),
+    sigunguName: String(source.sigunguName ?? ''),
+    score: (source.score as number | null | undefined) ?? null,
     totalJobInfo,
     fitJobInfo,
-    totalSupportNum: payload?.totalSupportNum ?? null,
-    fitSupportNum: payload?.fitSupportNum ?? null,
+    totalSupportNum,
+    fitSupportNum,
     dwellingSimpleInfo: dwellingSimple,
-    infraMajors: toInfraStats(payload?.infraMajors),
-
-    // legacy flattened fields for existing UI
-    totalJobNum: totalJobInfo?.count ?? undefined,
-    fitJobNum: fitJobInfo?.count ?? null,
-    monthlyRentAvg: monthlyAvgApprox,
-    monthlyRentMid: monthlyMid,
-    jeonseAvg: jeonseAvgApprox,
-    jeonseMid,
-    infra: toInfraStats(payload?.infraMajors)
+    infraMajors: toInfraStats(
+      source.infraMajors as
+        | Array<{ major: InfraStat['major']; num?: number | null }>
+        | undefined
+    )
   }
 }
 
-function mapDetailResponse(payload: any): RegionDetail {
-  const totalJobInfo = toJobInfo(payload?.totalJobInfo)
-  const fitJobInfo = toJobInfo(payload?.fitJobInfo)
-  const dwellingInfoRaw = payload?.dwellingInfo
+function mapDetailResponse(payload: unknown): RegionDetail {
+  const source = toRecord(payload) ?? {}
+  const totalJobInfo = toJobInfo(source.totalJobInfo)
+  const fitJobInfo = toJobInfo(source.fitJobInfo)
+  const dwellingInfoRaw =
+    source.dwellingInfo && typeof source.dwellingInfo === 'object'
+      ? (source.dwellingInfo as Record<string, unknown>)
+      : undefined
   const dwellingInfo = dwellingInfoRaw
     ? {
-        monthAvg: dwellingInfoRaw.monthAvg ?? dwellingInfoRaw.MonthAvg ?? null,
-        monthMid: dwellingInfoRaw.monthMid ?? dwellingInfoRaw.MonthMid ?? null,
-        jeonseAvg:
-          dwellingInfoRaw.jeonseAvg ?? dwellingInfoRaw.JeonseAvg ?? null,
-        jeonseMid:
+        monthAvg: toNullableNumber(
+          dwellingInfoRaw.monthAvg ?? dwellingInfoRaw.MonthAvg ?? null
+        ),
+        monthMid: toNullableNumber(
+          dwellingInfoRaw.monthMid ?? dwellingInfoRaw.MonthMid ?? null
+        ),
+        jeonseAvg: toNullableNumber(
+          dwellingInfoRaw.jeonseAvg ?? dwellingInfoRaw.JeonseAvg ?? null
+        ),
+        jeonseMid: toNullableNumber(
           dwellingInfoRaw.jeonseMid ?? dwellingInfoRaw.JeonseMid ?? null
+        )
       }
     : null
 
   const supportItems = toSupportItems(
-    payload?.supportList ?? payload?.totalSupportList
+    source.supportList ?? source.totalSupportList
   )
   const infraDetails: RegionDetailInfraItem[] = Array.isArray(
-    payload?.infraDetails
+    source.infraDetails
   )
-    ? payload.infraDetails.map((item: any) => ({
-        major: item.major,
-        name: item.name,
-        num: Number(item.num ?? 0)
-      }))
+    ? (source.infraDetails as unknown[])
+        .map((item) => {
+          const record = toRecord(item)
+          if (!record) return null
+          const major = record.major
+          const name = record.name
+          const num = Number(record.num ?? 0)
+          if (
+            typeof major !== 'string' ||
+            typeof name !== 'string' ||
+            !VALID_INFRA_MAJORS.includes(major as InfraStat['major'])
+          ) {
+            return null
+          }
+          return { major: major as InfraStat['major'], name, num }
+        })
+        .filter((entry): entry is RegionDetailInfraItem => entry !== null)
     : []
 
   return {
-    sidoCode: String(payload?.sidoCode ?? ''),
-    sidoName: String(payload?.sidoName ?? ''),
-    sigunguCode: String(payload?.sigunguCode ?? ''),
-    sigunguName: String(payload?.sigunguName ?? ''),
+    sidoCode: String(source.sidoCode ?? ''),
+    sidoName: String(source.sidoName ?? ''),
+    sigunguCode: String(source.sigunguCode ?? ''),
+    sigunguName: String(source.sigunguName ?? ''),
     totalJobInfo,
     fitJobInfo,
     totalJobs: totalJobInfo?.count ?? undefined,
     fitJobs: fitJobInfo?.count ?? null,
-    jobURL: totalJobInfo?.url ?? payload?.jobURL ?? null,
+    jobURL:
+      totalJobInfo?.url ?? (source.jobURL as string | null | undefined) ?? null,
     monthlyRentAvg: dwellingInfo?.monthAvg ?? undefined,
     monthlyRentMid: dwellingInfo?.monthMid ?? undefined,
     jeonseAvg: dwellingInfo?.jeonseAvg ?? undefined,
     jeonseMid: dwellingInfo?.jeonseMid ?? undefined,
-    totalSupportNum: payload?.totalSupportNum ?? null,
+    totalSupportNum:
+      typeof source.totalSupportNum === 'number'
+        ? source.totalSupportNum
+        : null,
     totalSupportList: supportItems,
     supportList: supportItems,
     dwellingInfo,
@@ -318,7 +362,7 @@ export async function fetchRecommendations(
     ? legacyToRecommendationParams(filters)
     : filters
 
-  const response = await apiGet<any[]>('/api/recommend', {
+  const response = await apiGet<unknown[]>('/api/recommend', {
     supportTag: normalizedFilters.supportTag,
     midJobCode: normalizedFilters.midJobCode,
     dwellingType: normalizedFilters.dwellingType,
@@ -334,7 +378,7 @@ export async function fetchRegionDetail(params: {
   midJobCode?: string
   jobCode?: string
 }): Promise<RegionDetail> {
-  const response = await apiGet<any>('/api/detail', {
+  const response = await apiGet<unknown>('/api/detail', {
     sigunguCode: params.sigunguCode,
     midJobCode: params.midJobCode ?? params.jobCode
   })

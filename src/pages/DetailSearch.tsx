@@ -57,7 +57,7 @@ const JEONSE_PRICE_OPTIONS: PriceOption[] = [
 ]
 
 const DEFAULT_MONTHLY_PRICE =
-  MONTHLY_PRICE_OPTIONS[4]?.value ?? MONTHLY_PRICE_OPTIONS[0]?.value ?? 0
+  MONTHLY_PRICE_OPTIONS[0]?.value ?? MONTHLY_PRICE_OPTIONS[0]?.value ?? 0
 
 const INFRA_OPTIONS: Array<{ id: InfraImportance; label: string }> = [
   { id: 'LOW', label: '낮음' },
@@ -467,26 +467,33 @@ export default function DetailSearch() {
         {!isLoading &&
           !error &&
           results.map((r, idx) => {
+            const fitJobCount = r.fitJobInfo?.count
             const jobsHighlight =
               !!selectedJobMid &&
-              typeof r.fitJobNum === 'number' &&
-              r.fitJobNum > 0
+              typeof fitJobCount === 'number' &&
+              fitJobCount > 0
             const supportHighlight =
               !!selectedSupportTag &&
               typeof r.fitSupportNum === 'number' &&
               r.fitSupportNum > 0
 
+            const monthlyMid = r.dwellingSimpleInfo?.monthMid ?? null
+            const jeonseMid = r.dwellingSimpleInfo?.jeonseMid ?? null
+            const priceBasis =
+              housingType === 'MONTHLY' ? monthlyMid : jeonseMid
             const priceDiff =
-              housingType === 'MONTHLY'
-                ? Math.abs(
-                    (r.monthlyRentMid ?? r.monthlyRentAvg ?? 0) - selectedPrice
-                  )
-                : Math.abs((r.jeonseMid ?? r.jeonseAvg ?? 0) - selectedPrice)
+              priceBasis == null
+                ? Number.POSITIVE_INFINITY
+                : Math.abs(priceBasis - selectedPrice)
             const tolerance = housingType === 'MONTHLY' ? 10 : 3000
             const monthlyHighlight =
-              housingType === 'MONTHLY' && priceDiff <= tolerance
+              housingType === 'MONTHLY' &&
+              monthlyMid != null &&
+              priceDiff <= tolerance
             const jeonseHighlight =
-              housingType === 'JEONSE' && priceDiff <= tolerance
+              housingType === 'JEONSE' &&
+              jeonseMid != null &&
+              priceDiff <= tolerance
 
             const key = `${r.sigunguCode}-${idx}`
             const canAdd =

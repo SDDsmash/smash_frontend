@@ -70,31 +70,8 @@ export default function MapSearch() {
           sigunguName: d.sigunguName,
           totalJobInfo,
           fitJobInfo,
-          totalJobNum: totalJobInfo?.count ?? undefined,
-          fitJobNum: fitJobInfo?.count ?? null,
           totalSupportNum,
           dwellingSimpleInfo: dwellingSimple,
-          monthlyRentAvg:
-            d.dwellingInfo?.monthAvg ??
-            d.monthlyRentAvg ??
-            dwellingSimple?.monthMid ??
-            undefined,
-          monthlyRentMid:
-            d.dwellingInfo?.monthMid ??
-            d.monthlyRentMid ??
-            dwellingSimple?.monthMid ??
-            undefined,
-          jeonseAvg:
-            d.dwellingInfo?.jeonseAvg ??
-            d.jeonseAvg ??
-            dwellingSimple?.jeonseMid ??
-            undefined,
-          jeonseMid:
-            d.dwellingInfo?.jeonseMid ??
-            d.jeonseMid ??
-            dwellingSimple?.jeonseMid ??
-            undefined,
-          infra: aggregatedInfra,
           infraMajors: aggregatedInfra
         }
         setSelectedRec(rec)

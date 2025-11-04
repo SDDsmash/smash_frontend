@@ -35,16 +35,14 @@ export default function RegionCard({
   jobCodeForDetail?: string
 }) {
   const { addBySigunguCode } = useComparison()
-  const infra = item.infraMajors ?? item.infra ?? []
+  const infra = item.infraMajors ?? []
 
   const jobInfo = item.fitJobInfo ?? item.totalJobInfo
-  const jobValue = jobInfo?.count ?? item.fitJobNum ?? item.totalJobNum
-  const hasFitJobData =
-    (item.fitJobInfo && typeof item.fitJobInfo.count === 'number') ||
-    typeof item.fitJobNum === 'number'
+  const jobValue = jobInfo?.count
+  const hasFitJobData = Boolean(item.fitJobInfo && jobInfo?.count !== undefined)
   const jobLabel = hasFitJobData ? '맞춤 일자리' : '전체 일자리'
 
-  const totalJobFallback = item.totalJobInfo?.count ?? item.totalJobNum ?? 0
+  const totalJobFallback = item.totalJobInfo?.count ?? 0
   const displayJobValue = jobValue ?? totalJobFallback
 
   const supportValue =
@@ -54,16 +52,8 @@ export default function RegionCard({
   const supportLabel =
     typeof item.fitSupportNum === 'number' ? '맞춤 지원사업' : '전체 지원사업'
 
-  const monthlyValue =
-    item.dwellingSimpleInfo?.monthMid ??
-    item.monthlyRentMid ??
-    item.monthlyRentAvg ??
-    null
-  const jeonseValue =
-    item.dwellingSimpleInfo?.jeonseMid ??
-    item.jeonseMid ??
-    item.jeonseAvg ??
-    null
+  const monthlyValue = item.dwellingSimpleInfo?.monthMid ?? null
+  const jeonseValue = item.dwellingSimpleInfo?.jeonseMid ?? null
 
   return (
     <article
