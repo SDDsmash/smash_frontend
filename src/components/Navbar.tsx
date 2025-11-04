@@ -1,9 +1,24 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { NavLink } from 'react-router-dom'
 import logo from 'assets/logo.png'
 
 export default function Navbar() {
   const [open, setOpen] = useState(false)
+  const [scrolled, setScrolled] = useState(false)
+
+  useEffect(() => {
+    const handleScroll = () => {
+      setScrolled(window.scrollY > 0)
+    }
+
+    handleScroll()
+    window.addEventListener('scroll', handleScroll, { passive: true })
+    return () => {
+      window.removeEventListener('scroll', handleScroll)
+    }
+  }, [])
+
+  const showBackground = scrolled || open
   const linkBase = 'px-4 py-3 rounded-md text-2xl font-medium whitespace-nowrap'
   const linkActive = 'text-brand-700 font-semibold'
   const linkIdle = 'text-black hover:text-brand-700'
@@ -16,7 +31,11 @@ export default function Navbar() {
   ]
 
   return (
-    <header className="sticky top-0 z-50 text-black">
+    <header
+      className={`sticky top-0 z-50 text-black transition-all duration-300 ${
+        showBackground ? 'bg-white shadow-[0_6px_18px_-12px_rgba(15,23,42,0.12)]' : 'bg-transparent shadow-none'
+      }`}
+    >
       <nav className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 h-24 grid grid-cols-3 items-center">
         <div className="col-start-1 flex items-center gap-4">
           <NavLink to="/">
