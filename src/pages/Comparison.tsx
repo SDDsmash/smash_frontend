@@ -1,5 +1,6 @@
 import RegionDrilldown from 'components/RegionDrilldown'
 import RegionCard from 'components/RegionCard'
+import LoadingIndicator from 'components/LoadingIndicator'
 import type {
   InfraStat,
   RegionRecommendation,
@@ -64,7 +65,16 @@ export default function Comparison() {
         </div>
       </section>
 
-      {isAdding && <p className="text-gray-600">불러오는 중...</p>}
+      {isAdding && (
+        <LoadingIndicator
+          className="py-6"
+          messages={[
+            '선택한 지역의 세부 정보를 불러오고 있어요...',
+            '비교 데이터를 준비 중입니다. 잠시만 기다려 주세요.'
+          ]}
+          description="곧 비교 목록에 추가됩니다."
+        />
+      )}
 
       <section>
         {items.length === 0 ? (

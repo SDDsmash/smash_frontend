@@ -153,6 +153,15 @@ const legacySupportTagMap: Record<string, string> = {
   주거지원: 'HOUSING_SUPPORT'
 }
 
+let supportTagsCache: CodeItem[] | null = null
+let supportTagsPromise: Promise<CodeItem[]> | null = null
+
+let jobTopCodesCache: CodeItem[] | null = null
+let jobTopCodesPromise: Promise<CodeItem[]> | null = null
+
+const jobMidCodesCache: Record<string, CodeItem[] | undefined> = {}
+const jobMidCodesPromises: Record<string, Promise<CodeItem[]> | undefined> = {}
+
 const VALID_INFRA_MAJORS: InfraStat['major'][] = [
   'HEALTH',
   'FOOD',
@@ -306,6 +315,18 @@ function mapDetailResponse(payload: unknown): RegionDetail {
   const supportItems = toSupportItems(
     source.supportList ?? source.totalSupportList
   )
+  const aiUseRaw = source.aiUse
+  const aiUse =
+    typeof aiUseRaw === 'boolean'
+      ? aiUseRaw
+      : typeof aiUseRaw === 'string'
+        ? aiUseRaw.toLowerCase() === 'true'
+        : null
+  const aiSummaryRaw = source.aiSummary
+  const aiSummary =
+    typeof aiSummaryRaw === 'string' && aiSummaryRaw.trim().length > 0
+      ? aiSummaryRaw.trim()
+      : null
   const infraDetails: RegionDetailInfraItem[] = Array.isArray(
     source.infraDetails
   )
@@ -349,6 +370,8 @@ function mapDetailResponse(payload: unknown): RegionDetail {
         : null,
     totalSupportList: supportItems,
     supportList: supportItems,
+    aiUse,
+    aiSummary,
     dwellingInfo,
     infra: infraDetails,
     infraDetails
@@ -377,29 +400,89 @@ export async function fetchRegionDetail(params: {
   sigunguCode: string
   midJobCode?: string
   jobCode?: string
+  aiUse?: boolean
 }): Promise<RegionDetail> {
   const response = await apiGet<unknown>('/api/detail', {
     sigunguCode: params.sigunguCode,
-    midJobCode: params.midJobCode ?? params.jobCode
+    midJobCode: params.midJobCode ?? params.jobCode,
+    aiUse: params.aiUse === true ? 'true' : undefined
   })
 
   return mapDetailResponse(response)
 }
 
 export async function fetchJobTopCodes(): Promise<CodeItem[]> {
-  const response = await apiGet<CodeItem[]>('/api/code/jobTop')
-  return response ?? []
+  if (jobTopCodesCache) return jobTopCodesCache
+
+  if (!jobTopCodesPromise) {
+    jobTopCodesPromise = apiGet<CodeItem[]>('/api/code/jobTop')
+      .then((response) => response ?? [])
+      .then((data) => {
+        jobTopCodesCache = data
+        return data
+      })
+      .catch((error) => {
+        jobTopCodesCache = null
+        throw error
+      })
+      .finally(() => {
+        jobTopCodesPromise = null
+      })
+  }
+
+  if (!jobTopCodesPromise) return jobTopCodesCache ?? []
+  return jobTopCodesPromise
 }
 
 export async function fetchJobMidCodes(topCode: string): Promise<CodeItem[]> {
   if (!topCode) return []
-  const response = await apiGet<CodeItem[]>('/api/code/jobMid', { topCode })
-  return response ?? []
+  const cached = jobMidCodesCache[topCode]
+  if (cached) return cached
+
+  if (!jobMidCodesPromises[topCode]) {
+    jobMidCodesPromises[topCode] = apiGet<CodeItem[]>('/api/code/jobMid', {
+      topCode
+    })
+      .then((response) => response ?? [])
+      .then((data) => {
+        jobMidCodesCache[topCode] = data
+        return data
+      })
+      .catch((error) => {
+        delete jobMidCodesCache[topCode]
+        throw error
+      })
+      .finally(() => {
+        delete jobMidCodesPromises[topCode]
+      })
+  }
+
+  const promise = jobMidCodesPromises[topCode]
+  if (!promise) return jobMidCodesCache[topCode] ?? []
+  return promise
 }
 
 export async function fetchSupportTags(): Promise<CodeItem[]> {
-  const response = await apiGet<CodeItem[]>('/api/code/supportTag')
-  return response ?? []
+  if (supportTagsCache) return supportTagsCache
+
+  if (!supportTagsPromise) {
+    supportTagsPromise = apiGet<CodeItem[]>('/api/code/supportTag')
+      .then((response) => response ?? [])
+      .then((data) => {
+        supportTagsCache = data
+        return data
+      })
+      .catch((error) => {
+        supportTagsCache = null
+        throw error
+      })
+      .finally(() => {
+        supportTagsPromise = null
+      })
+  }
+
+  if (!supportTagsPromise) return supportTagsCache ?? []
+  return supportTagsPromise
 }
 
 export async function fetchSidoCodes(): Promise<CodeItem[]> {

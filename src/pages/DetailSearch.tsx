@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import RegionCard from 'components/RegionCard'
+import LoadingIndicator from 'components/LoadingIndicator'
 import { useComparison } from 'state/comparisonStore'
 import {
   ApiError,
@@ -371,9 +372,17 @@ export default function DetailSearch() {
           <div>
             <h3 className="text-sm font-medium text-gray-600">지원사업</h3>
             {filterLoading && supportTags.length === 0 ? (
-              <p className="mt-3 text-sm text-gray-500">
-                지원 태그를 불러오는 중...
-              </p>
+              <div className="mt-3">
+                <LoadingIndicator
+                  compact
+                  className="text-sm text-gray-500"
+                  messages={[
+                    '지원사업 태그를 정리하고 있어요...',
+                    '맞춤 필터 정보를 준비 중입니다.'
+                  ]}
+                  description="필터 목록을 로드하는 동안 잠시만 기다려 주세요."
+                />
+              </div>
             ) : (
               <div className="mt-3 flex flex-wrap gap-3">
                 {supportTags.map((tag) => {
@@ -457,7 +466,17 @@ export default function DetailSearch() {
       </section>
 
       <section className="space-y-4">
-        {isLoading && <p className="text-gray-600">불러오는 중...</p>}
+        {isLoading && (
+          <LoadingIndicator
+            className="py-10"
+            messages={[
+              '추천 결과를 계산하는 중입니다...',
+              '지역과 조건을 분석하고 있어요.',
+              '맞춤 데이터를 준비 중입니다. 잠시만 기다려 주세요.'
+            ]}
+            description="선택한 조건에 따라 추천을 산출하고 있습니다."
+          />
+        )}
         {error && <p className="text-red-600">{error}</p>}
         {!isLoading && !error && results.length === 0 && (
           <p className="text-gray-500">
@@ -517,6 +536,8 @@ export default function DetailSearch() {
                   onCardClick={(code) => {
                     const search = new URLSearchParams({ sigunguCode: code })
                     if (selectedJobMid) search.set('jobCode', selectedJobMid)
+                    if (selectedSupportTag)
+                      search.set('supportTag', selectedSupportTag)
                     navigate(`/region?${search.toString()}`)
                   }}
                 />

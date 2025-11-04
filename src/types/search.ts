@@ -51,6 +51,8 @@ export interface RegionDetail {
   sidoName: string
   sigunguCode: string
   sigunguName: string
+  aiUse?: boolean | null
+  aiSummary?: string | null
   totalJobInfo?: JobInfo | null
   fitJobInfo?: JobInfo | null
   totalJobs?: number
