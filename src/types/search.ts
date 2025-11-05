@@ -46,6 +46,7 @@ export interface RegionDetailInfraItem {
   major: InfraMajor
   name: string
   num: number
+  score?: number | null
 }
 
 export interface RegionDetailSupportItem {
@@ -61,6 +62,7 @@ export interface RegionDetail {
   sigunguName: string
   aiUse?: boolean | null
   aiSummary?: string | null
+  population?: number | null
   totalJobInfo?: JobInfo | null
   fitJobInfo?: JobInfo | null
   totalJobs?: number

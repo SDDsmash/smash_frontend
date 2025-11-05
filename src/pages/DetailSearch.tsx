@@ -15,7 +15,6 @@ import {
 import type { RegionRecommendation } from 'types/search'
 
 type DwellingTypeOption = RecommendationParams['dwellingType']
-type InfraImportance = RecommendationParams['infraImportance']
 
 interface PriceOption {
   value: number
@@ -60,11 +59,12 @@ const JEONSE_PRICE_OPTIONS: PriceOption[] = [
 const DEFAULT_MONTHLY_PRICE =
   MONTHLY_PRICE_OPTIONS[0]?.value ?? MONTHLY_PRICE_OPTIONS[0]?.value ?? 0
 
-const INFRA_OPTIONS: Array<{ id: InfraImportance; label: string }> = [
-  { id: 'LOW', label: '낮음' },
-  { id: 'MID', label: '보통' },
-  { id: 'HIGH', label: '높음' }
-]
+const INFRA_MAJORS = [
+  { id: 'HEALTH', label: '건강' },
+  { id: 'FOOD', label: '식생활' },
+  { id: 'CULTURE', label: '문화' },
+  { id: 'LIFE', label: '생활편의' }
+] as const
 
 export default function DetailSearch() {
   const navigate = useNavigate()
@@ -79,7 +79,8 @@ export default function DetailSearch() {
   const [selectedPrice, setSelectedPrice] = useState<number>(
     DEFAULT_MONTHLY_PRICE
   )
-  const [infraImportance, setInfraImportance] = useState<InfraImportance>('LOW')
+  const infraImportance: RecommendationParams['infraImportance'] = 'LOW'
+  const [infraChoices, setInfraChoices] = useState<string[]>([])
 
   const [supportTags, setSupportTags] = useState<CodeItem[]>([])
   const [selectedSupportTag, setSelectedSupportTag] = useState<string>('')
@@ -213,7 +214,7 @@ export default function DetailSearch() {
   const resetFilters = () => {
     setHousingType('MONTHLY')
     setSelectedPrice(DEFAULT_MONTHLY_PRICE)
-    setInfraImportance('LOW')
+    setInfraChoices([])
     setOccupationQuery('')
     setSelectedJobMid('')
     setSelectedJobTop('')
@@ -226,10 +227,17 @@ export default function DetailSearch() {
     setIsLoading(true)
     setError(null)
     try {
+      const infraChoiceValue = infraChoices.reduce((mask, major) => {
+        const index = INFRA_MAJORS.findIndex((option) => option.id === major)
+        if (index === -1) return mask
+        return mask + (1 << (INFRA_MAJORS.length - 1 - index))
+      }, 0)
+
       const filters: RecommendationParams = {
         dwellingType: housingType,
         price: selectedPrice,
         infraImportance,
+        infraChoice: infraChoiceValue,
         midJobCode: selectedJobMid || undefined,
         supportTag: selectedSupportTag || undefined
       }
@@ -455,32 +463,56 @@ export default function DetailSearch() {
 
           <div className="my-6 border-t border-gray-100" />
 
-          {/* 인프라 중요도 */}
+          {/* 인프라 대분류 선택 */}
           <div>
-            <h3 className="text-sm font-medium text-gray-600">인프라 중요도</h3>
-            <div className="mt-3 flex gap-3">
-              {INFRA_OPTIONS.map((option) => {
-                const active = infraImportance === option.id
+            <h3 className="text-sm font-medium text-gray-600">
+              중요 인프라 대분류
+            </h3>
+            <p className="mt-1 text-xs text-gray-500">
+              필요한 인프라를 자유롭게 선택하세요. (중복 선택 가능)
+            </p>
+            <div className="mt-3 flex flex-wrap gap-2">
+              {INFRA_MAJORS.map((option, idx) => {
+                const active = infraChoices.includes(option.id)
+                const bitValue = 1 << (INFRA_MAJORS.length - 1 - idx)
                 return (
-                  <label
+                  <button
                     key={option.id}
-                    className={`grid h-12 w-24 cursor-pointer place-items-center rounded-full border text-sm transition ${
+                    type="button"
+                    onClick={() => {
+                      setInfraChoices((prev) => {
+                        if (prev.includes(option.id)) {
+                          return prev.filter((id) => id !== option.id)
+                        }
+                        return [...prev, option.id]
+                      })
+                    }}
+                    className={`rounded-full border px-4 py-2 text-sm transition ${
                       active
-                        ? 'border-brand-600 bg-brand-50 text-brand-700'
-                        : 'border-gray-300 bg-white text-gray-700 hover:border-gray-400 hover:bg-gray-50'
+                        ? 'border-brand-600 bg-brand-50 text-brand-700 shadow-sm'
+                        : 'border-gray-300 text-gray-700 hover:border-gray-400 hover:bg-gray-50'
                     }`}
+                    aria-pressed={active}
+                    data-bit={bitValue}
                   >
-                    <input
-                      type="radio"
-                      className="sr-only"
-                      name="infra"
-                      checked={active}
-                      onChange={() => setInfraImportance(option.id)}
-                    />
-                    {option.label}
-                  </label>
+                    #{option.label}
+                  </button>
                 )
               })}
+              {infraChoices.length > 0 && (
+                <span className="inline-flex items-center rounded-full bg-brand-50 px-3 py-1 text-xs text-brand-700">
+                  선택 코드:{' '}
+                  {infraChoices
+                    .map((optionId) => {
+                      const index = INFRA_MAJORS.findIndex(
+                        (option) => option.id === optionId
+                      )
+                      if (index === -1) return '0'
+                      return (1 << (INFRA_MAJORS.length - 1 - index)).toString()
+                    })
+                    .join(' + ')}
+                </span>
+              )}
             </div>
           </div>
 

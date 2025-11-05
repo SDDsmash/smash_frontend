@@ -71,7 +71,7 @@ export default function LoadingIndicator({
             spinnerSize
           )}
         />
-        <span className="flex items-center gap-1">
+        {/*<span className="flex items-center gap-1">
           {[0, 1, 2].map((index) => (
             <span
               key={index}
@@ -82,7 +82,7 @@ export default function LoadingIndicator({
               style={{ animationDelay: `${index * 120}ms` }}
             />
           ))}
-        </span>
+        </span>*/}
       </div>
       <div className="space-y-1">
         <p>{messageRef.current}</p>

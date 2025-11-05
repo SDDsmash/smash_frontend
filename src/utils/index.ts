@@ -21,6 +21,7 @@ export interface RecommendationParams {
   infraImportance: 'LOW' | 'MID' | 'HIGH'
   midJobCode?: string
   supportTag?: string
+  infraChoice?: number
 }
 
 /**
@@ -337,6 +338,7 @@ function mapDetailResponse(payload: unknown): RegionDetail {
   const supportItems = toSupportItems(
     source.supportList ?? source.totalSupportList
   )
+  const population = toNullableNumber(source.population ?? null)
   const aiUseRaw = source.aiUse
   const aiUse =
     typeof aiUseRaw === 'boolean'
@@ -359,6 +361,7 @@ function mapDetailResponse(payload: unknown): RegionDetail {
           const major = record.major
           const name = record.name
           const num = Number(record.num ?? 0)
+          const scoreValue = toNullableNumber(record.score ?? null)
           if (
             typeof major !== 'string' ||
             typeof name !== 'string' ||
@@ -366,7 +369,13 @@ function mapDetailResponse(payload: unknown): RegionDetail {
           ) {
             return null
           }
-          return { major: major as InfraStat['major'], name, num }
+          const entry: RegionDetailInfraItem = {
+            major: major as InfraStat['major'],
+            name,
+            num,
+            score: scoreValue ?? null
+          }
+          return entry
         })
         .filter((entry): entry is RegionDetailInfraItem => entry !== null)
     : []
@@ -394,6 +403,7 @@ function mapDetailResponse(payload: unknown): RegionDetail {
     supportList: supportItems,
     aiUse,
     aiSummary,
+    population,
     dwellingInfo,
     infra: infraDetails,
     infraDetails
@@ -413,6 +423,10 @@ export async function fetchRecommendations(
     dwellingType: normalizedFilters.dwellingType,
     price: normalizedFilters.price,
     infraImportance: normalizedFilters.infraImportance,
+    infraChoice:
+      typeof normalizedFilters.infraChoice === 'number'
+        ? normalizedFilters.infraChoice
+        : undefined,
     aiUse: 'true'
   })
 

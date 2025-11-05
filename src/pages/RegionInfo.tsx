@@ -95,6 +95,12 @@ export default function RegionInfo() {
     return { label: '전체 일자리', value: totalCount }
   }, [data])
 
+  const population = useMemo(() => {
+    if (!data) return null
+    const value = data.population
+    return typeof value === 'number' && Number.isFinite(value) ? value : null
+  }, [data])
+
   const monthlyAvg = useMemo(() => {
     if (!data) return null
     return data.dwellingInfo?.monthAvg ?? data.monthlyRentAvg ?? null
@@ -257,8 +263,16 @@ export default function RegionInfo() {
               />
             </div>
 
-            {/* 일자리: 카드 + 버튼 나란히 */}
-            <div className="mt-5 flex gap-2">
+            {/* 인구 + 일자리 카드 */}
+            <div className="mt-5 flex flex-wrap gap-2">
+              {typeof population === 'number' && (
+                <div className="rounded-lg border border-gray-100 bg-gray-50 p-4">
+                  <p className="text-xs text-gray-500">인구수</p>
+                  <p className="mt-1 text-2xl font-semibold tabular-nums text-gray-900">
+                    {formatNumberComma(population)}
+                  </p>
+                </div>
+              )}
               {jobs && (
                 <div className="rounded-lg border border-gray-100 bg-gray-50 p-4">
                   <p className="text-xs text-gray-500">{jobs.label}</p>
@@ -316,20 +330,28 @@ export default function RegionInfo() {
                   인프라
                 </h2>
                 <div className="flex flex-wrap gap-2">
-                  {data.infra.map((it, idx) => (
-                    <span
-                      key={`${it.major}-${it.name}-${idx}`}
-                      className="inline-flex items-center gap-1 rounded-full border border-gray-300 bg-white px-3 py-1 text-xs text-gray-700"
-                    >
-                      <span className="rounded bg-gray-100 px-1.5 py-0.5 text-[10px] font-semibold text-gray-700">
-                        {it.major}
+                  {data.infra.map((it, idx) => {
+                    const displayValue =
+                      typeof it.score === 'number' && Number.isFinite(it.score)
+                        ? it.score
+                        : it.num
+                    return (
+                      <span
+                        key={`${it.major}-${it.name}-${idx}`}
+                        className="inline-flex items-center gap-1 rounded-full border border-gray-300 bg-white px-3 py-1 text-xs text-gray-700"
+                      >
+                        <span className="rounded bg-gray-100 px-1.5 py-0.5 text-[10px] font-semibold text-gray-700">
+                          {it.major}
+                        </span>
+                        <span>{it.name}</span>
+                        <span className="tabular-nums text-gray-500">
+                          {typeof displayValue === 'number'
+                            ? displayValue
+                            : '-'}
+                        </span>
                       </span>
-                      <span>{it.name}</span>
-                      <span className="tabular-nums text-gray-500">
-                        {it.num}
-                      </span>
-                    </span>
-                  ))}
+                    )
+                  })}
                 </div>
               </div>
             )}
