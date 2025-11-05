@@ -66,6 +66,29 @@ const INFRA_MAJORS = [
   { id: 'LIFE', label: '생활편의' }
 ] as const
 
+const SUPPORT_MAJOR_OPTIONS = [
+  { id: 'HOUSING_SUPPORT', label: '주거지원' },
+  { id: 'LONG_TERM_UNEMPLOYED', label: '장기미취업' },
+  { id: 'INTERN', label: '인턴' },
+  { id: 'LOAN', label: '대출' }
+] as const
+
+function bitValueFromIndex(index: number, total: number): number {
+  if (index < 0) return 0
+  return 1 << (total - 1 - index)
+}
+
+function computeBitMask(
+  selectedIds: string[],
+  options: readonly { id: string }[]
+): number {
+  return selectedIds.reduce((mask, id) => {
+    const index = options.findIndex((option) => option.id === id)
+    if (index === -1) return mask
+    return mask + bitValueFromIndex(index, options.length)
+  }, 0)
+}
+
 export default function DetailSearch() {
   const navigate = useNavigate()
   const { items: compareItems } = useComparison()
@@ -81,6 +104,7 @@ export default function DetailSearch() {
   )
   const infraImportance: RecommendationParams['infraImportance'] = 'LOW'
   const [infraChoices, setInfraChoices] = useState<string[]>([])
+  const [supportChoices, setSupportChoices] = useState<string[]>([])
 
   const [supportTags, setSupportTags] = useState<CodeItem[]>([])
   const [selectedSupportTag, setSelectedSupportTag] = useState<string>('')
@@ -219,6 +243,7 @@ export default function DetailSearch() {
     setSelectedJobMid('')
     setSelectedJobTop('')
     setSelectedSupportTag('')
+    setSupportChoices([])
     setResults([])
     setError(null)
   }
@@ -227,17 +252,18 @@ export default function DetailSearch() {
     setIsLoading(true)
     setError(null)
     try {
-      const infraChoiceValue = infraChoices.reduce((mask, major) => {
-        const index = INFRA_MAJORS.findIndex((option) => option.id === major)
-        if (index === -1) return mask
-        return mask + (1 << (INFRA_MAJORS.length - 1 - index))
-      }, 0)
+      const infraChoiceValue = computeBitMask(infraChoices, INFRA_MAJORS)
+      const supportChoiceValue = computeBitMask(
+        supportChoices,
+        SUPPORT_MAJOR_OPTIONS
+      )
 
       const filters: RecommendationParams = {
         dwellingType: housingType,
         price: selectedPrice,
         infraImportance,
         infraChoice: infraChoiceValue,
+        supportChoice: supportChoiceValue,
         midJobCode: selectedJobMid || undefined,
         supportTag: selectedSupportTag || undefined
       }
@@ -414,60 +440,50 @@ export default function DetailSearch() {
 
           <div className="my-6 border-t border-gray-100" />
 
-          {/* 지원사업 체크박스 */}
+          {/* 지원사업 주요 카테고리 */}
           <div>
             <h3 className="text-sm font-medium text-gray-600">지원사업</h3>
-            {filterLoading && supportTags.length === 0 ? (
-              <div className="mt-3">
-                <LoadingIndicator
-                  compact
-                  className="text-sm text-gray-500"
-                  messages={[
-                    '지원사업 태그를 정리하고 있어요...',
-                    '맞춤 필터 정보를 준비 중입니다.'
-                  ]}
-                  description="필터 목록을 로드하는 동안 잠시만 기다려 주세요."
-                />
-              </div>
-            ) : (
-              <div className="mt-3 flex flex-wrap gap-3">
-                {supportTags.map((tag) => {
-                  const active = selectedSupportTag === tag.code
-                  return (
-                    <label
-                      key={tag.code}
-                      className={`cursor-pointer select-none rounded-lg border px-4 py-2 text-sm transition ${
-                        active
-                          ? 'border-brand-600 bg-brand-50 text-brand-700 shadow-sm'
-                          : 'border-gray-300 bg-white text-gray-700 hover:border-gray-400 hover:bg-gray-50'
-                      }`}
-                    >
-                      <input
-                        type="checkbox"
-                        className="sr-only"
-                        checked={active}
-                        onChange={() => toggleSupportTag(tag.code)}
-                      />
-                      #{tag.name}
-                    </label>
-                  )
-                })}
-                {supportTags.length === 0 && !filterLoading && (
-                  <p className="text-sm text-gray-500">
-                    표시할 지원 태그가 없습니다.
-                  </p>
-                )}
-              </div>
-            )}
+            <p className="mt-1 text-xs text-gray-500">
+              필요한 지원사업을 자유롭게 선택하세요. (중복 선택 가능)
+            </p>
+            <div className="mt-3 flex flex-wrap gap-2">
+              {SUPPORT_MAJOR_OPTIONS.map((option, idx) => {
+                const active = supportChoices.includes(option.id)
+                const bitValue = bitValueFromIndex(
+                  idx,
+                  SUPPORT_MAJOR_OPTIONS.length
+                )
+                return (
+                  <button
+                    key={option.id}
+                    type="button"
+                    onClick={() =>
+                      setSupportChoices((prev) =>
+                        prev.includes(option.id)
+                          ? prev.filter((id) => id !== option.id)
+                          : [...prev, option.id]
+                      )
+                    }
+                    className={`rounded-full border px-4 py-2 text-sm transition ${
+                      active
+                        ? 'border-brand-600 bg-brand-50 text-brand-700 shadow-sm'
+                        : 'border-gray-300 text-gray-700 hover:border-gray-400 hover:bg-gray-50'
+                    }`}
+                    aria-pressed={active}
+                    data-bit={bitValue}
+                  >
+                    #{option.label}
+                  </button>
+                )
+              })}
+            </div>
           </div>
 
           <div className="my-6 border-t border-gray-100" />
 
           {/* 인프라 대분류 선택 */}
           <div>
-            <h3 className="text-sm font-medium text-gray-600">
-              중요 인프라 대분류
-            </h3>
+            <h3 className="text-sm font-medium text-gray-600">인프라</h3>
             <p className="mt-1 text-xs text-gray-500">
               필요한 인프라를 자유롭게 선택하세요. (중복 선택 가능)
             </p>
@@ -499,20 +515,6 @@ export default function DetailSearch() {
                   </button>
                 )
               })}
-              {infraChoices.length > 0 && (
-                <span className="inline-flex items-center rounded-full bg-brand-50 px-3 py-1 text-xs text-brand-700">
-                  선택 코드:{' '}
-                  {infraChoices
-                    .map((optionId) => {
-                      const index = INFRA_MAJORS.findIndex(
-                        (option) => option.id === optionId
-                      )
-                      if (index === -1) return '0'
-                      return (1 << (INFRA_MAJORS.length - 1 - index)).toString()
-                    })
-                    .join(' + ')}
-                </span>
-              )}
             </div>
           </div>
 
@@ -561,8 +563,10 @@ export default function DetailSearch() {
               !!selectedJobMid &&
               typeof fitJobCount === 'number' &&
               fitJobCount > 0
+            const hasSupportFilter =
+              Boolean(selectedSupportTag) || supportChoices.length > 0
             const supportHighlight =
-              !!selectedSupportTag &&
+              hasSupportFilter &&
               typeof r.fitSupportNum === 'number' &&
               r.fitSupportNum > 0
 

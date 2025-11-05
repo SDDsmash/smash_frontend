@@ -22,6 +22,7 @@ export interface RecommendationParams {
   midJobCode?: string
   supportTag?: string
   infraChoice?: number
+  supportChoice?: number
 }
 
 /**
@@ -426,6 +427,10 @@ export async function fetchRecommendations(
     infraChoice:
       typeof normalizedFilters.infraChoice === 'number'
         ? normalizedFilters.infraChoice
+        : undefined,
+    supportChoice:
+      typeof normalizedFilters.supportChoice === 'number'
+        ? normalizedFilters.supportChoice
         : undefined,
     aiUse: 'true'
   })
