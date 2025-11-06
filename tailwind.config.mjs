@@ -4,6 +4,17 @@ export default {
   content: ['./src/**/*.{mjs,js,ts,jsx,tsx}'],
   theme: {
     extend: {
+      fontFamily: {
+        sans: [
+          '"Pretendard Variable"',
+          'Pretendard',
+          '-apple-system',
+          'BlinkMacSystemFont',
+          'system-ui',
+          '"Segoe UI"',
+          'sans-serif'
+        ]
+      },
       colors: {
         brand: {
           50: '#EAF6FD',
