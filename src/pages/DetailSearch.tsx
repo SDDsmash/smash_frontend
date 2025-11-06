@@ -8,6 +8,7 @@ import {
   ApiError,
   fetchJobMidCodes,
   fetchJobTopCodes,
+  fetchSupportTags,
   fetchRecommendations,
   type CodeItem,
   type RecommendationParams
@@ -66,7 +67,7 @@ const INFRA_MAJORS = [
 
 const SUPPORT_MAJOR_OPTIONS = [
   { id: 'HOUSING_SUPPORT', label: '주거지원' },
-  { id: 'LONG_TERM_UNEMPLOYED', label: '장기미취업' },
+  { id: 'LONG_TERM_UNEMPLOYED', label: '장기미취업청년' },
   { id: 'INTERN', label: '인턴' },
   { id: 'LOAN', label: '대출' }
 ] as const
@@ -82,8 +83,9 @@ export default function DetailSearch() {
     setSelectedPrice,
     infraChoices,
     toggleInfraChoice,
-    supportMajorIds,
-    toggleSupportMajorId,
+    supportTagCodes,
+    setSupportTagCodes,
+    toggleSupportTagCode,
     occupationQuery,
     setOccupationQuery,
     selectedJobMid,
@@ -100,8 +102,42 @@ export default function DetailSearch() {
   )
   const infraImportance: RecommendationParams['infraImportance'] = 'LOW'
 
+  const [supportTags, setSupportTags] = useState<CodeItem[]>([])
+  const [supportTagsLoading, setSupportTagsLoading] = useState(false)
+  const [supportTagsError, setSupportTagsError] = useState<string | null>(null)
   const [jobTopCodes, setJobTopCodes] = useState<CodeItem[]>([])
   const [jobMidByTop, setJobMidByTop] = useState<Record<string, CodeItem[]>>({})
+
+  useEffect(() => {
+    let mounted = true
+    setSupportTagsLoading(true)
+    setSupportTagsError(null)
+    fetchSupportTags()
+      .then((tags) => {
+        if (!mounted) return
+        setSupportTags(tags ?? [])
+      })
+      .catch(() => {
+        if (!mounted) return
+        setSupportTagsError('지원 태그를 불러오지 못했습니다.')
+      })
+      .finally(() => {
+        if (mounted) setSupportTagsLoading(false)
+      })
+
+    return () => {
+      mounted = false
+    }
+  }, [])
+
+  useEffect(() => {
+    if (!supportTags.length || !supportTagCodes.length) return
+    const availableCodes = new Set(supportTags.map((tag) => tag.code))
+    const filtered = supportTagCodes.filter((code) => availableCodes.has(code))
+    if (filtered.length !== supportTagCodes.length) {
+      setSupportTagCodes(filtered)
+    }
+  }, [supportTags, supportTagCodes, setSupportTagCodes])
 
   const [jobInputFocused, setJobInputFocused] = useState(false)
 
@@ -145,6 +181,31 @@ export default function DetailSearch() {
       suggestion.name.toLowerCase().includes(q)
     )
   }, [occupationQuery, jobSuggestions])
+
+  const supportTagCodeToMajorId = useMemo(() => {
+    const map = new Map<string, string>()
+    SUPPORT_MAJOR_OPTIONS.forEach((option) => {
+      map.set(option.id, option.id)
+    })
+    supportTags.forEach((tag) => {
+      const option = SUPPORT_MAJOR_OPTIONS.find(
+        (item) => item.id === tag.code || item.label === tag.name.trim()
+      )
+      if (option) {
+        map.set(tag.code, option.id)
+      }
+    })
+    return map
+  }, [supportTags])
+
+  const supportMajorIds = useMemo(() => {
+    const ids = new Set<string>()
+    supportTagCodes.forEach((code) => {
+      const majorId = supportTagCodeToMajorId.get(code)
+      if (majorId) ids.add(majorId)
+    })
+    return Array.from(ids)
+  }, [supportTagCodes, supportTagCodeToMajorId])
 
   useEffect(() => {
     let mounted = true
@@ -418,26 +479,45 @@ export default function DetailSearch() {
               필요한 지원사업을 자유롭게 선택하세요. (중복 선택 가능)
             </p>
             <div className="mt-3 flex flex-wrap gap-2">
-              {SUPPORT_MAJOR_OPTIONS.map((option, idx) => {
-                const active = supportMajorIds.includes(option.id)
-                const bitValue = 1 << (SUPPORT_MAJOR_OPTIONS.length - 1 - idx)
+              {supportTags.map((tag) => {
+                const active = supportTagCodes.includes(tag.code)
                 return (
                   <button
-                    key={option.id}
+                    key={tag.code}
                     type="button"
-                    onClick={() => toggleSupportMajorId(option.id)}
+                    onClick={() => toggleSupportTagCode(tag.code)}
                     className={`rounded-full border px-4 py-2 text-sm transition ${
                       active
                         ? 'border-brand-600 bg-brand-50 text-brand-700 shadow-sm'
                         : 'border-gray-300 text-gray-700 hover:border-gray-400 hover:bg-gray-50'
                     }`}
                     aria-pressed={active}
-                    data-bit={bitValue}
                   >
-                    #{option.label}
+                    #{tag.name}
                   </button>
                 )
               })}
+              {supportTagsLoading && (
+                <LoadingIndicator
+                  compact
+                  className="text-xs text-gray-500"
+                  messages={[
+                    '지원 정책 태그를 불러오는 중입니다...',
+                    '지역별 지원사업 분류를 준비하고 있어요.'
+                  ]}
+                  description="조금만 기다려 주시면 필터를 사용할 수 있어요."
+                />
+              )}
+              {!supportTagsLoading && supportTagsError && (
+                <span className="text-xs text-red-500">{supportTagsError}</span>
+              )}
+              {!supportTagsLoading &&
+                !supportTagsError &&
+                supportTags.length === 0 && (
+                  <span className="text-xs text-gray-400">
+                    표시할 지원정책 태그가 없습니다.
+                  </span>
+                )}
             </div>
           </div>
 

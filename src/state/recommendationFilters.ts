@@ -8,7 +8,6 @@ type RecommendationFiltersState = {
   housingType: DwellingTypeOption
   selectedPrice: number
   infraChoices: string[]
-  supportMajorIds: string[]
   supportTagCodes: string[]
   occupationQuery: string
   selectedJobMid: string
@@ -17,8 +16,6 @@ type RecommendationFiltersState = {
   setSelectedPrice: (value: number) => void
   setInfraChoices: (choices: string[]) => void
   toggleInfraChoice: (choice: string) => void
-  setSupportMajorIds: (choices: string[]) => void
-  toggleSupportMajorId: (choice: string) => void
   setSupportTagCodes: (codes: string[]) => void
   toggleSupportTagCode: (code: string) => void
   setOccupationQuery: (value: string) => void
@@ -34,7 +31,6 @@ export const useRecommendationFilters = create<RecommendationFiltersState>(
     housingType: 'MONTHLY',
     selectedPrice: DEFAULT_PRICE,
     infraChoices: [],
-    supportMajorIds: [],
     supportTagCodes: [],
     occupationQuery: '',
     selectedJobMid: '',
@@ -49,18 +45,6 @@ export const useRecommendationFilters = create<RecommendationFiltersState>(
         set({ infraChoices: infraChoices.filter((item) => item !== choice) })
       } else {
         set({ infraChoices: [...infraChoices, choice] })
-      }
-    },
-    setSupportMajorIds: (choices) =>
-      set({ supportMajorIds: Array.from(new Set(choices)) }),
-    toggleSupportMajorId: (choice) => {
-      const { supportMajorIds } = get()
-      if (supportMajorIds.includes(choice)) {
-        set({
-          supportMajorIds: supportMajorIds.filter((item) => item !== choice)
-        })
-      } else {
-        set({ supportMajorIds: [...supportMajorIds, choice] })
       }
     },
     setSupportTagCodes: (codes) =>
@@ -83,7 +67,6 @@ export const useRecommendationFilters = create<RecommendationFiltersState>(
         housingType: 'MONTHLY',
         selectedPrice: DEFAULT_PRICE,
         infraChoices: [],
-        supportMajorIds: [],
         supportTagCodes: [],
         occupationQuery: '',
         selectedJobMid: '',
