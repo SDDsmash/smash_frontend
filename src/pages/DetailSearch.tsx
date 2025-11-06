@@ -105,6 +105,7 @@ export default function DetailSearch() {
   const [supportTags, setSupportTags] = useState<CodeItem[]>([])
   const [supportTagsLoading, setSupportTagsLoading] = useState(false)
   const [supportTagsError, setSupportTagsError] = useState<string | null>(null)
+  const [jobFiltersError, setJobFiltersError] = useState<string | null>(null)
   const [jobTopCodes, setJobTopCodes] = useState<CodeItem[]>([])
   const [jobMidByTop, setJobMidByTop] = useState<Record<string, CodeItem[]>>({})
 
@@ -211,17 +212,31 @@ export default function DetailSearch() {
     let mounted = true
     async function loadFilters() {
       try {
+        setJobFiltersError(null)
         const topCodes = await fetchJobTopCodes()
         if (!mounted) return
         setJobTopCodes(topCodes)
 
+        const jobMidFailures: Array<{
+          code: string
+          name: string
+          message: string
+        }> = []
         const entries: Array<[string, CodeItem[]]> = await Promise.all(
           topCodes.map(async (top) => {
             try {
               const mids = await fetchJobMidCodes(top.code)
               return [top.code, mids] as [string, CodeItem[]]
             } catch (err) {
-              console.error(err)
+              const message =
+                err instanceof Error
+                  ? err.message
+                  : '알 수 없는 오류가 발생했습니다.'
+              jobMidFailures.push({
+                code: top.code,
+                name: top.name,
+                message
+              })
               return [top.code, [] as CodeItem[]]
             }
           })
@@ -233,8 +248,16 @@ export default function DetailSearch() {
           map[code] = mids
         })
         setJobMidByTop(map)
+        setJobFiltersError(
+          jobMidFailures.length === 0
+            ? null
+            : jobMidFailures.length === topCodes.length
+              ? '직종 필터 데이터를 불러오지 못했습니다. 잠시 후 다시 시도해 주세요.'
+              : `일부 직종 필터 데이터를 불러오지 못했습니다. (${jobMidFailures.length}개 실패)`
+        )
       } catch (err) {
         if (!mounted) return
+        setJobFiltersError('직종 필터 데이터를 불러오지 못했습니다.')
         setError('필터 데이터를 불러오지 못했습니다.')
       }
     }
@@ -467,6 +490,9 @@ export default function DetailSearch() {
                   </ul>
                 )}
               </div>
+              {jobFiltersError && (
+                <p className="mt-2 text-xs text-red-500">{jobFiltersError}</p>
+              )}
               {selectedJobTopName && (
                 <p className="mt-2 text-xs text-gray-500">
                   선택된 직종 대분류: {selectedJobTopName}

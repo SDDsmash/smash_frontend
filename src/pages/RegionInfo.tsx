@@ -19,8 +19,16 @@ function normalizeUrl(raw?: string | null) {
   if (!raw) return ''
   const trimmed = raw.trim()
   if (!trimmed) return ''
-  if (/^https?:\/\//i.test(trimmed)) return trimmed
-  return `https://${trimmed}`
+  const sanitized = trimmed.replace(/\s+/g, '')
+  if (!sanitized) return ''
+  const lower = sanitized.toLowerCase()
+  if (/^(javascript|data|vbscript|file|blob):/.test(lower)) return ''
+  if (/^https?:\/\//i.test(sanitized)) return sanitized
+  if (/^\/\//.test(sanitized)) return `https:${sanitized}`
+  if (/^[\w.-]+(\.[\w.-]+)+(:\d+)?(\/.*)?$/i.test(sanitized)) {
+    return `https://${sanitized}`
+  }
+  return ''
 }
 
 export default function RegionInfo() {
@@ -248,7 +256,7 @@ export default function RegionInfo() {
                 <a
                   href={jobLinkUrl}
                   target="_blank"
-                  rel="noreferrer"
+                  rel="noopener noreferrer"
                   className="inline-flex items-center justify-center self-center rounded-md bg-brand-600 px-3 py-1.5 text-sm text-white shadow-sm hover:bg-brand-700"
                 >
                   채용 정보 바로가기
@@ -382,12 +390,12 @@ export default function RegionInfo() {
                 </span>
               </span>
               <div>
-                <p className="flex items-center gap-1 text-lg font-semibold tracking-wide text-brand-600">
+                <div className="flex items-center gap-1 text-lg font-semibold tracking-wide text-brand-600">
                   AI Insight
                   <span className="inline-flex items-center">
                     <AiSummaryExplainer />
                   </span>
-                </p>
+                </div>
                 <h3 className="text-xs font-semibold text-gray-600/50">
                   이 지역의 특징을 한눈에 살펴보세요
                 </h3>
@@ -484,7 +492,7 @@ export default function RegionInfo() {
                       <a
                         href={normalizeUrl(s.url)}
                         target="_blank"
-                        rel="noreferrer"
+                        rel="noopener noreferrer"
                         className="mt-3 inline-flex w-fit rounded-md border border-brand-600 px-3 py-1.5 text-sm font-medium text-brand-700 hover:bg-brand-50"
                       >
                         자세히 보기

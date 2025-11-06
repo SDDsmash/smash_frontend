@@ -38,4 +38,4 @@ while ((match = pathTagRegex.exec(svgContent)) !== null) {
 writeFileSync(outPath, JSON.stringify(idToD, null, 2), 'utf8')
 
 const count = Object.keys(idToD).length
-console.log(`Wrote ${count} entries to ${outPath}`)
+process.stdout.write(`Wrote ${count} entries to ${outPath}\n`)

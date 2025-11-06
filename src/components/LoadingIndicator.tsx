@@ -40,7 +40,6 @@ export default function LoadingIndicator({
   }, [messagePool])
 
   const spinnerSize = compact ? 'h-8 w-8' : 'h-12 w-12'
-  const dotSize = compact ? 'h-2.5 w-2.5' : 'h-3 w-3'
 
   return (
     <div

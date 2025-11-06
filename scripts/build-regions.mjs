@@ -94,6 +94,6 @@ const regions = {
 }
 
 fs.writeFileSync(outFile, JSON.stringify(regions, null, 2) + '\n', 'utf8')
-console.log('Generated', outFile)
+process.stdout.write(`Generated ${outFile}\n`)
 
 
