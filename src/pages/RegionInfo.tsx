@@ -369,7 +369,7 @@ export default function RegionInfo() {
       </section>
 
       {aiSummary && (
-        <section className="relative overflow-hidden rounded-2xl border border-brand-100 bg-gradient-to-br from-brand-50 via-white to-white p-6 shadow-md shadow-brand-100/40">
+        <section className="relative rounded-2xl border border-brand-100 bg-gradient-to-br from-brand-50 via-white to-white p-6 shadow-md shadow-brand-100/40">
           <div
             aria-hidden="true"
             className="pointer-events-none absolute -right-10 top-1/2 size-56 -translate-y-1/2 rounded-full bg-gradient-to-br from-brand-200/60 via-brand-400/20 to-brand-600/30 blur-3xl"
@@ -386,8 +386,11 @@ export default function RegionInfo() {
                 </span>
               </span>
               <div>
-                <p className="text-lg font-semibold uppercase tracking-wide text-brand-600">
+                <p className="flex items-center gap-1 text-lg font-semibold tracking-wide text-brand-600">
                   AI Insight
+                  <span className="inline-flex items-center">
+                    <AiSummaryExplainer />
+                  </span>
                 </p>
                 <h3 className="text-xs font-semibold text-gray-600/50">
                   이 지역의 특징을 한눈에 살펴보세요
@@ -521,5 +524,46 @@ function AddToCompareButton({ sigunguCode }: { sigunguCode: string }) {
     >
       {exists ? '비교에 추가됨' : '비교에 추가'}
     </button>
+  )
+}
+
+function AiSummaryExplainer() {
+  const introSentences = ['AI는 다음 원칙을 바탕으로 요약을 제공합니다.']
+  const bulletLines: string[] = [
+    'ㆍ수치 대신 지역의 특징과 분위기에 집중해 자연스러운 문장으로 서술합니다.',
+    'ㆍ지역의 고유 장점은 축제·문화, 자연 명소, 특산물, 대학·연구기관, 도시정책 등을 검색해 최근 기사나 공신력 있는 출처 2건 이상을 근거로 삼습니다.',
+    'ㆍ근거가 부족하면 과도한 단정을 피하고, 일반적인 긍정적 특성을 중심으로 자연스럽게 묘사합니다.'
+  ]
+  const closingLines = [
+    '서로 일치하거나 상호 보완하는 사실만 요약에 반영하며, 모호하거나 상충되는 정보는 제외합니다.'
+  ]
+
+  const explainer = (
+    <div className="space-y-2 text-xs leading-5 text-gray-600">
+      {introSentences.map((sentence) => (
+        <p key={sentence}>{sentence}</p>
+      ))}
+      <div className="space-y-1">
+        {bulletLines.map((line, index) => (
+          <p key={index}>{line}</p>
+        ))}
+      </div>
+      {closingLines.map((sentence) => (
+        <p key={sentence}>{sentence}</p>
+      ))}
+    </div>
+  )
+
+  return (
+    <div className="relative inline-flex items-center">
+      <div className="group inline-flex items-center">
+        <span className="inline-flex size-4 cursor-pointer items-center justify-center rounded-full bg-brand-100 text-[11px] font-semibold text-brand-600">
+          ?
+        </span>
+        <div className="pointer-events-none absolute left-1/2 top-full z-10 mt-2 hidden w-max -translate-x-10 rounded-lg border border-brand-100 bg-white p-4 shadow-lg group-hover:block">
+          {explainer}
+        </div>
+      </div>
+    </div>
   )
 }
