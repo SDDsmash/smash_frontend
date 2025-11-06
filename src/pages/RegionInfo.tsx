@@ -140,6 +140,20 @@ export default function RegionInfo() {
     return trimmed.length > 0 ? trimmed : null
   }, [data])
 
+  const jobLinkUrl = useMemo(() => {
+    if (!data) return ''
+    const candidates = [
+      data.fitJobInfo?.url,
+      data.totalJobInfo?.url,
+      data.jobURL
+    ]
+    for (const candidate of candidates) {
+      const normalized = normalizeUrl(candidate)
+      if (normalized) return normalized
+    }
+    return ''
+  }, [data])
+
   const supportTagNameToCode = useMemo(() => {
     const map = new Map<string, string>()
     supportTags.forEach((tag) => {
@@ -221,9 +235,9 @@ export default function RegionInfo() {
                 </p>
               </div>
 
-              {normalizeUrl(data.jobURL) && (
+              {jobLinkUrl && (
                 <a
-                  href={normalizeUrl(data.jobURL)}
+                  href={jobLinkUrl}
                   target="_blank"
                   rel="noreferrer"
                   className="inline-flex items-center justify-center self-center rounded-md bg-brand-600 px-3 py-1.5 text-sm text-white shadow-sm hover:bg-brand-700"
