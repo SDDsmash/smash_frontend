@@ -1,6 +1,7 @@
 import RegionDrilldown from 'components/RegionDrilldown'
 import RegionCard from 'components/RegionCard'
 import LoadingIndicator from 'components/LoadingIndicator'
+import { useNavigate } from 'react-router-dom'
 import type {
   InfraStat,
   RegionRecommendation,
@@ -10,6 +11,7 @@ import type {
 import { useComparison } from 'state/comparisonStore'
 
 export default function Comparison() {
+  const navigate = useNavigate()
   const { items, addBySigunguCode, removeBySigunguCode, isAdding } =
     useComparison()
 
@@ -89,13 +91,16 @@ export default function Comparison() {
                   onClick={() =>
                     removeBySigunguCode(String(d.sigunguCode || ''))
                   }
-                  className="absolute right-2 top-2 inline-flex size-7 items-center justify-center rounded-full bg-white/90 text-gray-500 shadow ring-1 ring-gray-200 hover:text-gray-700"
+                  className="absolute right-2 top-2 inline-flex size-7 items-center justify-center rounded-full bg-white/90 text-gray-500 shadow ring-1 ring-gray-200 hover:bg-gray-50"
                 >
                   ×
                 </button>
                 <RegionCard
                   item={toRecommendation(d)}
                   metricsColsClass="sm:grid-cols-2"
+                  onCardClick={(code) =>
+                    navigate(`/region?sigunguCode=${encodeURIComponent(code)}`)
+                  }
                 />
               </div>
             ))}
