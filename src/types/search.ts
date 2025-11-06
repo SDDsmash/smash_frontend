@@ -72,6 +72,7 @@ export interface RegionDetail {
   monthlyRentMid?: number
   jeonseAvg?: number
   jeonseMid?: number
+  fitSupportNum?: number | null
   totalSupportNum?: number | null
   totalSupportList?: RegionDetailSupportItem[]
   supportList?: RegionDetailSupportItem[]
