@@ -15,6 +15,14 @@ import RegionDrilldown from 'components/RegionDrilldown'
 import RegionPreviewMap from 'components/RegionPreviewMap'
 import LoadingIndicator from 'components/LoadingIndicator'
 
+function normalizeUrl(raw?: string | null) {
+  if (!raw) return ''
+  const trimmed = raw.trim()
+  if (!trimmed) return ''
+  if (/^https?:\/\//i.test(trimmed)) return trimmed
+  return `https://${trimmed}`
+}
+
 export default function RegionInfo() {
   const [params] = useSearchParams()
   const navigate = useNavigate()
@@ -60,14 +68,6 @@ export default function RegionInfo() {
       setSupportTagCodes(filtered)
     }
   }, [supportTags, supportTagCodes, setSupportTagCodes])
-
-  const normalizeUrl = (raw?: string | null) => {
-    if (!raw) return ''
-    const trimmed = raw.trim()
-    if (!trimmed) return ''
-    if (/^https?:\/\//i.test(trimmed)) return trimmed
-    return `https://${trimmed}`
-  }
 
   useEffect(() => {
     if (!sigunguCode) {
@@ -169,13 +169,22 @@ export default function RegionInfo() {
   const filteredSupportList = useMemo(() => {
     const list = data?.totalSupportList ?? []
     if (!list.length) return []
-    if (selectedSupportTagSet.size === 0) return list
 
-    return list.filter((item) => {
-      const keyword = item.keyword?.trim()
-      if (!keyword) return false
-      const normalized = supportTagNameToCode.get(keyword) ?? keyword
-      return selectedSupportTagSet.has(normalized)
+    const filtered =
+      selectedSupportTagSet.size === 0
+        ? list
+        : list.filter((item) => {
+            const keyword = item.keyword?.trim()
+            if (!keyword) return false
+            const normalized = supportTagNameToCode.get(keyword) ?? keyword
+            return selectedSupportTagSet.has(normalized)
+          })
+
+    return [...filtered].sort((a, b) => {
+      const aHasUrl = Boolean(normalizeUrl(a.url))
+      const bHasUrl = Boolean(normalizeUrl(b.url))
+      if (aHasUrl === bHasUrl) return 0
+      return aHasUrl ? -1 : 1
     })
   }, [data, selectedSupportTagSet, supportTagNameToCode])
 
