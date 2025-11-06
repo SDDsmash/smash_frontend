@@ -484,14 +484,16 @@ export default function RegionInfo() {
                         #{s.keyword}
                       </span>
                     )}
-                    <a
-                      href={normalizeUrl(s.url)}
-                      target="_blank"
-                      rel="noreferrer"
-                      className="mt-3 inline-flex w-fit rounded-md border border-brand-600 px-3 py-1.5 text-sm font-medium text-brand-700 hover:bg-brand-50"
-                    >
-                      자세히 보기
-                    </a>
+                    {normalizeUrl(s.url) ? (
+                      <a
+                        href={normalizeUrl(s.url)}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="mt-3 inline-flex w-fit rounded-md border border-brand-600 px-3 py-1.5 text-sm font-medium text-brand-700 hover:bg-brand-50"
+                      >
+                        자세히 보기
+                      </a>
+                    ) : null}
                   </div>
                 </article>
               ))}
