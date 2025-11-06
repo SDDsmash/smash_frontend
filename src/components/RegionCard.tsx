@@ -118,7 +118,10 @@ export default function RegionCard({
       {item.isAiPick &&
         item.aiPickReason &&
         item.aiPickReason.trim().length > 0 && (
-          <p className="mt-4 rounded-xl bg-gradient-to-r from-brand-50 via-white to-white px-4 py-3 text-sm text-gray-700 ring-1 ring-brand-100">
+          <p className="mt-4 rounded-xl bg-gradient-to-r from-brand-50 via-white to-brand-100 px-4 py-3 text-sm text-gray-700 ring-1 ring-brand-100">
+            <span className="mr-2 rounded-md bg-gradient-to-r from-indigo-500 via-brand-500 to-sky-500 px-2 py-1 font-semibold text-white ring-1 ring-brand-100">
+              AI Reason
+            </span>
             {item.aiPickReason}
           </p>
         )}

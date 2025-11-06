@@ -353,11 +353,16 @@ export default function DetailSearch() {
   return (
     <div className="space-y-6">
       <section className="overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-sm">
-        <div className="p-5 md:p-6">
+        <div className="border-b border-brand-100 bg-brand-50/60 px-5 py-4">
           <h2 className="text-lg font-semibold text-gray-900">조건 설정</h2>
 
+          <p className="mt-1 text-sm text-gray-500">
+            조건을 설정하고 검색해 주세요.
+          </p>
+        </div>
+        <div className="p-5 md:p-6">
           {/* 주거 유형 */}
-          <div className="mt-5">
+          <div>
             <h3 className="text-sm font-medium text-gray-600">주거 유형</h3>
             <div className="mt-3 flex flex-wrap gap-3">
               {HOUSING_OPTIONS.map((option) => {
