@@ -3,15 +3,16 @@ import { useNavigate } from 'react-router-dom'
 import RegionCard from 'components/RegionCard'
 import LoadingIndicator from 'components/LoadingIndicator'
 import { useComparison } from 'state/comparisonStore'
+import { useRecommendationFilters } from 'state/recommendationFilters'
 import {
   ApiError,
   fetchJobMidCodes,
   fetchJobTopCodes,
   fetchRecommendations,
-  fetchSupportTags,
   type CodeItem,
   type RecommendationParams
 } from 'utils'
+import { encodeBitmask } from 'utils/bitmask'
 import type { RegionRecommendation } from 'types/search'
 
 type DwellingTypeOption = RecommendationParams['dwellingType']
@@ -56,9 +57,6 @@ const JEONSE_PRICE_OPTIONS: PriceOption[] = [
   { value: 21000, label: '2억 1,000만원 이상' }
 ]
 
-const DEFAULT_MONTHLY_PRICE =
-  MONTHLY_PRICE_OPTIONS[0]?.value ?? MONTHLY_PRICE_OPTIONS[0]?.value ?? 0
-
 const INFRA_MAJORS = [
   { id: 'HEALTH', label: '건강' },
   { id: 'FOOD', label: '식생활' },
@@ -73,62 +71,50 @@ const SUPPORT_MAJOR_OPTIONS = [
   { id: 'LOAN', label: '대출' }
 ] as const
 
-function bitValueFromIndex(index: number, total: number): number {
-  if (index < 0) return 0
-  return 1 << (total - 1 - index)
-}
-
-function computeBitMask(
-  selectedIds: string[],
-  options: readonly { id: string }[]
-): number {
-  return selectedIds.reduce((mask, id) => {
-    const index = options.findIndex((option) => option.id === id)
-    if (index === -1) return mask
-    return mask + bitValueFromIndex(index, options.length)
-  }, 0)
-}
-
 export default function DetailSearch() {
   const navigate = useNavigate()
   const { items: compareItems } = useComparison()
 
-  const [housingType, setHousingType] = useState<DwellingTypeOption>('MONTHLY')
+  const {
+    housingType,
+    setHousingType,
+    selectedPrice,
+    setSelectedPrice,
+    infraChoices,
+    toggleInfraChoice,
+    supportMajorIds,
+    toggleSupportMajorId,
+    occupationQuery,
+    setOccupationQuery,
+    selectedJobMid,
+    setSelectedJobMid,
+    selectedJobTop,
+    setSelectedJobTop,
+    reset: resetRecommendationFilters
+  } = useRecommendationFilters()
+
   const priceOptions = useMemo(
     () =>
       housingType === 'MONTHLY' ? MONTHLY_PRICE_OPTIONS : JEONSE_PRICE_OPTIONS,
     [housingType]
   )
-  const [selectedPrice, setSelectedPrice] = useState<number>(
-    DEFAULT_MONTHLY_PRICE
-  )
   const infraImportance: RecommendationParams['infraImportance'] = 'LOW'
-  const [infraChoices, setInfraChoices] = useState<string[]>([])
-  const [supportChoices, setSupportChoices] = useState<string[]>([])
-
-  const [supportTags, setSupportTags] = useState<CodeItem[]>([])
-  const [selectedSupportTag, setSelectedSupportTag] = useState<string>('')
 
   const [jobTopCodes, setJobTopCodes] = useState<CodeItem[]>([])
   const [jobMidByTop, setJobMidByTop] = useState<Record<string, CodeItem[]>>({})
 
-  const [occupationQuery, setOccupationQuery] = useState('')
-  const [selectedJobMid, setSelectedJobMid] = useState<string>('')
-  const [selectedJobTop, setSelectedJobTop] = useState<string>('')
   const [jobInputFocused, setJobInputFocused] = useState(false)
 
   const [isLoading, setIsLoading] = useState(false)
-  const [filterLoading, setFilterLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [results, setResults] = useState<RegionRecommendation[]>([])
 
   useEffect(() => {
     if (!priceOptions.length) return
-    setSelectedPrice((prev) => {
-      if (priceOptions.some((opt) => opt.value === prev)) return prev
-      return priceOptions[0].value
-    })
-  }, [priceOptions])
+    if (!priceOptions.some((opt) => opt.value === selectedPrice)) {
+      setSelectedPrice(priceOptions[0].value)
+    }
+  }, [priceOptions, selectedPrice, setSelectedPrice])
 
   const topNameMap = useMemo(() => {
     const map = new Map<string, string>()
@@ -163,15 +149,10 @@ export default function DetailSearch() {
   useEffect(() => {
     let mounted = true
     async function loadFilters() {
-      setFilterLoading(true)
       try {
-        const [topCodes, tags] = await Promise.all([
-          fetchJobTopCodes(),
-          fetchSupportTags()
-        ])
+        const topCodes = await fetchJobTopCodes()
         if (!mounted) return
         setJobTopCodes(topCodes)
-        setSupportTags(tags)
 
         const entries: Array<[string, CodeItem[]]> = await Promise.all(
           topCodes.map(async (top) => {
@@ -194,8 +175,6 @@ export default function DetailSearch() {
       } catch (err) {
         if (!mounted) return
         setError('필터 데이터를 불러오지 못했습니다.')
-      } finally {
-        if (mounted) setFilterLoading(false)
       }
     }
 
@@ -208,10 +187,6 @@ export default function DetailSearch() {
   const selectedJobTopName = selectedJobTop
     ? topNameMap.get(selectedJobTop)
     : ''
-
-  const toggleSupportTag = (code: string) => {
-    setSelectedSupportTag((prev) => (prev === code ? '' : code))
-  }
 
   const handleSelectJobSuggestion = (suggestion: JobSuggestion) => {
     setOccupationQuery(suggestion.name)
@@ -236,36 +211,32 @@ export default function DetailSearch() {
   }
 
   const resetFilters = () => {
-    setHousingType('MONTHLY')
-    setSelectedPrice(DEFAULT_MONTHLY_PRICE)
-    setInfraChoices([])
-    setOccupationQuery('')
-    setSelectedJobMid('')
-    setSelectedJobTop('')
-    setSelectedSupportTag('')
-    setSupportChoices([])
+    resetRecommendationFilters()
+    setJobInputFocused(false)
     setResults([])
     setError(null)
   }
+
+  const infraChoiceValue = useMemo(
+    () => encodeBitmask(INFRA_MAJORS, infraChoices),
+    [infraChoices]
+  )
+  const supportChoiceValue = useMemo(
+    () => encodeBitmask(SUPPORT_MAJOR_OPTIONS, supportMajorIds),
+    [supportMajorIds]
+  )
 
   async function onSearch() {
     setIsLoading(true)
     setError(null)
     try {
-      const infraChoiceValue = computeBitMask(infraChoices, INFRA_MAJORS)
-      const supportChoiceValue = computeBitMask(
-        supportChoices,
-        SUPPORT_MAJOR_OPTIONS
-      )
-
       const filters: RecommendationParams = {
         dwellingType: housingType,
         price: selectedPrice,
         infraImportance,
         infraChoice: infraChoiceValue,
         supportChoice: supportChoiceValue,
-        midJobCode: selectedJobMid || undefined,
-        supportTag: selectedSupportTag || undefined
+        midJobCode: selectedJobMid || undefined
       }
       const { items, aiPick } = await fetchRecommendations(filters)
 
@@ -448,22 +419,13 @@ export default function DetailSearch() {
             </p>
             <div className="mt-3 flex flex-wrap gap-2">
               {SUPPORT_MAJOR_OPTIONS.map((option, idx) => {
-                const active = supportChoices.includes(option.id)
-                const bitValue = bitValueFromIndex(
-                  idx,
-                  SUPPORT_MAJOR_OPTIONS.length
-                )
+                const active = supportMajorIds.includes(option.id)
+                const bitValue = 1 << (SUPPORT_MAJOR_OPTIONS.length - 1 - idx)
                 return (
                   <button
                     key={option.id}
                     type="button"
-                    onClick={() =>
-                      setSupportChoices((prev) =>
-                        prev.includes(option.id)
-                          ? prev.filter((id) => id !== option.id)
-                          : [...prev, option.id]
-                      )
-                    }
+                    onClick={() => toggleSupportMajorId(option.id)}
                     className={`rounded-full border px-4 py-2 text-sm transition ${
                       active
                         ? 'border-brand-600 bg-brand-50 text-brand-700 shadow-sm'
@@ -495,14 +457,7 @@ export default function DetailSearch() {
                   <button
                     key={option.id}
                     type="button"
-                    onClick={() => {
-                      setInfraChoices((prev) => {
-                        if (prev.includes(option.id)) {
-                          return prev.filter((id) => id !== option.id)
-                        }
-                        return [...prev, option.id]
-                      })
-                    }}
+                    onClick={() => toggleInfraChoice(option.id)}
                     className={`rounded-full border px-4 py-2 text-sm transition ${
                       active
                         ? 'border-brand-600 bg-brand-50 text-brand-700 shadow-sm'
@@ -563,8 +518,7 @@ export default function DetailSearch() {
               !!selectedJobMid &&
               typeof fitJobCount === 'number' &&
               fitJobCount > 0
-            const hasSupportFilter =
-              Boolean(selectedSupportTag) || supportChoices.length > 0
+            const hasSupportFilter = supportMajorIds.length > 0
             const supportHighlight =
               hasSupportFilter &&
               typeof r.fitSupportNum === 'number' &&
@@ -610,8 +564,6 @@ export default function DetailSearch() {
                   onCardClick={(code) => {
                     const search = new URLSearchParams({ sigunguCode: code })
                     if (selectedJobMid) search.set('jobCode', selectedJobMid)
-                    if (selectedSupportTag)
-                      search.set('supportTag', selectedSupportTag)
                     navigate(`/region?${search.toString()}`)
                   }}
                 />

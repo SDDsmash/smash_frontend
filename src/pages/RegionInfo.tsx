@@ -8,6 +8,7 @@ import {
   formatNumberComma
 } from 'utils'
 import { useComparison } from 'state/comparisonStore'
+import { useRecommendationFilters } from 'state/recommendationFilters'
 import type { RegionDetail } from 'types/search'
 import type { CodeItem } from 'utils'
 import RegionDrilldown from 'components/RegionDrilldown'
@@ -15,7 +16,7 @@ import RegionPreviewMap from 'components/RegionPreviewMap'
 import LoadingIndicator from 'components/LoadingIndicator'
 
 export default function RegionInfo() {
-  const [params, setParams] = useSearchParams()
+  const [params] = useSearchParams()
   const navigate = useNavigate()
   const sigunguCode = params.get('sigunguCode') || ''
   const jobCode = params.get('jobCode') || undefined
@@ -26,6 +27,8 @@ export default function RegionInfo() {
   const [supportTags, setSupportTags] = useState<CodeItem[]>([])
   const [supportTagsLoading, setSupportTagsLoading] = useState(false)
   const [supportTagsError, setSupportTagsError] = useState<string | null>(null)
+  const { supportTagCodes, setSupportTagCodes, toggleSupportTagCode } =
+    useRecommendationFilters()
 
   useEffect(() => {
     let mounted = true
@@ -49,6 +52,15 @@ export default function RegionInfo() {
     }
   }, [])
 
+  useEffect(() => {
+    if (!supportTags.length || !supportTagCodes.length) return
+    const availableCodes = new Set(supportTags.map((tag) => tag.code))
+    const filtered = supportTagCodes.filter((code) => availableCodes.has(code))
+    if (filtered.length !== supportTagCodes.length) {
+      setSupportTagCodes(filtered)
+    }
+  }, [supportTags, supportTagCodes, setSupportTagCodes])
+
   const normalizeUrl = (raw?: string | null) => {
     if (!raw) return ''
     const trimmed = raw.trim()
@@ -70,7 +82,6 @@ export default function RegionInfo() {
       .then((res) => {
         if (!mounted) return
         setData(res)
-        console.log(res)
       })
       .catch((err) => {
         if (!mounted) return
@@ -137,47 +148,9 @@ export default function RegionInfo() {
     return map
   }, [supportTags])
 
-  const rawSelectedSupportTags = useMemo(() => {
-    const param = params.get('supportTag')
-    if (!param) return [] as string[]
-    return param
-      .split(',')
-      .map((value: string) => value.trim())
-      .filter((value: string) => value.length > 0)
-  }, [params])
-
-  const selectedSupportTagCodes = useMemo(() => {
-    if (!rawSelectedSupportTags.length) return [] as string[]
-    return rawSelectedSupportTags.map((value: string) => {
-      const mapped = supportTagNameToCode.get(value)
-      return mapped ?? value
-    })
-  }, [rawSelectedSupportTags, supportTagNameToCode])
-
   const selectedSupportTagSet = useMemo(() => {
-    return new Set<string>(selectedSupportTagCodes)
-  }, [selectedSupportTagCodes])
-
-  const updateSupportTagParams = (codes: string[]) => {
-    const next = new URLSearchParams(params)
-    if (codes.length > 0) {
-      const uniqueCodes = Array.from<string>(new Set<string>(codes))
-      next.set('supportTag', uniqueCodes.join(','))
-    } else {
-      next.delete('supportTag')
-    }
-    setParams(next, { replace: true })
-  }
-
-  const handleToggleSupportTag = (code: string) => {
-    const next = new Set<string>(selectedSupportTagCodes)
-    if (next.has(code)) {
-      next.delete(code)
-    } else {
-      next.add(code)
-    }
-    updateSupportTagParams(Array.from<string>(next))
-  }
+    return new Set<string>(supportTagCodes)
+  }, [supportTagCodes])
 
   const filteredSupportList = useMemo(() => {
     const list = data?.totalSupportList ?? []
@@ -192,7 +165,7 @@ export default function RegionInfo() {
     })
   }, [data, selectedSupportTagSet, supportTagNameToCode])
 
-  const hasSelectedSupportTags = selectedSupportTagSet.size > 0
+  const hasSelectedSupportTags = supportTagCodes.length > 0
   const hasAnySupportItems = (data?.totalSupportList?.length ?? 0) > 0
 
   if (!sigunguCode) {
@@ -419,7 +392,7 @@ export default function RegionInfo() {
         <div className="flex flex-wrap gap-2">
           <button
             type="button"
-            onClick={() => updateSupportTagParams([])}
+            onClick={() => setSupportTagCodes([])}
             className={`rounded-full border px-3 py-1.5 text-xs transition ${
               hasSelectedSupportTags
                 ? 'border-gray-300 text-gray-600 hover:border-gray-400 hover:bg-gray-50'
@@ -434,7 +407,7 @@ export default function RegionInfo() {
               <button
                 key={tag.code}
                 type="button"
-                onClick={() => handleToggleSupportTag(tag.code)}
+                onClick={() => toggleSupportTagCode(tag.code)}
                 className={`rounded-full border px-3 py-1.5 text-xs transition ${
                   active
                     ? 'border-brand-600 bg-brand-50 text-brand-700 shadow-sm'
