@@ -21,9 +21,12 @@ export default function Comparison() {
     ;(d.infra || []).forEach((i: RegionDetailInfraItem) =>
       infraByMajor.set(i.major, (infraByMajor.get(i.major) || 0) + (i.num || 0))
     )
-    const infra: InfraStat[] = Array.from(infraByMajor.entries()).map(
-      ([major, num]) => ({ major: major as InfraStat['major'], num })
-    )
+    const infra: InfraStat[] =
+      d.infraMajors ??
+      Array.from(infraByMajor.entries()).map(([major, num]) => ({
+        major: major as InfraStat['major'],
+        num
+      }))
 
     const totalJobInfo =
       d.totalJobInfo ??

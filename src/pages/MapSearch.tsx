@@ -48,15 +48,19 @@ export default function MapSearch() {
           : undefined
 
         const aggregatedInfra: InfraStat[] = (() => {
-          const map = new Map<string, number>()
-          for (const item of d.infraDetails ?? d.infra ?? []) {
+          const map = new Map<string, { num: number; score: number | null }>()
+          for (const item of d.infraMajors ?? d.infraDetails ?? d.infra ?? []) {
             if (!item) continue
-            const current = map.get(item.major) ?? 0
-            map.set(item.major, current + (item.num ?? 0))
+            const current = map.get(item.major) ?? { num: 0, score: null }
+            map.set(item.major, {
+              num: current.num + (item.num ?? 0),
+              score: current.score ?? item.score ?? null
+            })
           }
-          return Array.from(map.entries()).map(([major, num]) => ({
+          return Array.from(map.entries()).map(([major, data]) => ({
             major: major as InfraStat['major'],
-            num
+            num: data.num,
+            score: data.score
           }))
         })()
 

@@ -79,6 +79,7 @@ export interface RegionDetail {
   dwellingInfo?: DwellingInfo | null
   infra?: RegionDetailInfraItem[]
   infraDetails?: RegionDetailInfraItem[]
+  infraMajors?: InfraStat[]
 }
 
 // Region code aliases for clarity

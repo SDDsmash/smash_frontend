@@ -381,6 +381,12 @@ function mapDetailResponse(payload: unknown): RegionDetail {
         .filter((entry): entry is RegionDetailInfraItem => entry !== null)
     : []
 
+  const infraMajors = toInfraStats(
+    source.infraMajors as
+      | Array<{ major: InfraStat['major']; num?: number | null }>
+      | undefined
+  )
+
   return {
     sidoCode: String(source.sidoCode ?? ''),
     sidoName: String(source.sidoName ?? ''),
@@ -407,7 +413,8 @@ function mapDetailResponse(payload: unknown): RegionDetail {
     population,
     dwellingInfo,
     infra: infraDetails,
-    infraDetails
+    infraDetails,
+    infraMajors
   }
 }
 
