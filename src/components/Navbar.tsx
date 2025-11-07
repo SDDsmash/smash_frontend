@@ -41,9 +41,9 @@ export default function Navbar() {
     >
       <nav className="mx-auto grid h-24 max-w-7xl grid-cols-3 items-center px-4 sm:px-6 lg:px-8">
         <div className="col-start-1 flex items-center gap-4">
-          <NavLink to="/">
-            <img src={logo} alt="로고" className="h-16 w-auto" />
-          </NavLink>
+          <div className="inline-flex select-none" aria-hidden="true">
+            <img src={logo} alt="" className="h-16 w-auto" />
+          </div>
         </div>
         <button
           className="col-start-3 inline-flex items-center justify-center justify-self-end rounded-md p-3 text-black hover:text-brand-700 focus:outline-none focus:ring-2 focus:ring-brand-600/30 md:hidden"
